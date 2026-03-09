@@ -30,12 +30,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can create items of all four types (raw material, semi-finished, finished, packaging) with weight in grams and carton-to-unit conversion
   4. User can search and filter the item list by type, category, and name, and can edit or soft-delete any item
   5. User can record incoming stock with quantity, date, and purchase cost, and see the stock level update immediately
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Scaffold Next.js, Prisma schema, Supabase Auth with RBAC, login, user management
+- [ ] 01-02-PLAN.md — Item CRUD with all four types, search/filter, SKU legend
+- [ ] 01-03-PLAN.md — Stock receiving with atomic ledger pattern, transaction history
+- [ ] 01-04-PLAN.md — Database migration, seed, and full end-to-end verification checkpoint
 
 ### Phase 2: Recipe Engine
 **Goal**: Users can define multi-level recipes that link finished products to their ingredients (including sub-recipes and packaging) and see full cost breakdowns
@@ -103,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 0/4 | Planned | - |
 | 2. Recipe Engine | 0/2 | Not started | - |
 | 3. Sales and Auto-Deduction | 0/2 | Not started | - |
 | 4. Dashboard and Alerts | 0/2 | Not started | - |
