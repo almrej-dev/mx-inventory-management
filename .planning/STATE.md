@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [01-01]: shadcn/ui v4 uses Base UI (not Radix) -- render prop instead of asChild
 - [01-01]: zod v4 requires standardSchemaResolver for react-hook-form (zodResolver incompatible)
 - [01-01]: Integer storage for weights (milligrams) and costs (centavos) throughout schema
+- [01-02]: Form schema uses user-friendly units (grams, pesos) -- server actions convert to storage units (mg, centavos)
+- [01-02]: Client-side TanStack Table filtering (globalFilterFn + columnFilters) for item list -- simpler than server-side refetch for small datasets
+- [01-02]: Edit page splits into server component (data load) + client component (form interactivity) via edit-client.tsx
 - [01-03]: receivedDate kept as z.string() in schema (not pipe to date) to avoid standardSchemaResolver type mismatch
 - [01-03]: Atomic ledger pattern: prisma.$transaction wraps ledger insert + stock_qty increment -- all future stock mutations must follow this
 - [01-03]: Sidebar restructured with section headers (NavItem | NavSection union type) for grouped navigation
@@ -65,5 +68,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 01-03-PLAN.md (stock receiving, atomic ledger, transaction history)
-Resume file: .planning/phases/01-foundation/01-03-SUMMARY.md
+Stopped at: Completed 01-02-PLAN.md (item CRUD, search/filter, SKU legend)
+Resume file: .planning/phases/01-foundation/01-02-SUMMARY.md

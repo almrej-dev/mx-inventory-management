@@ -7,12 +7,12 @@
 
 ### Item Management
 
-- [ ] **ITEM-01**: User can create items with type (raw material, semi-finished, finished, packaging)
-- [ ] **ITEM-02**: User can set unit weight in grams and carton conversion (e.g., 1 ctn = 8 units = 6,800g)
-- [ ] **ITEM-03**: User can view SKU legend with uniform format guide for consistent input
-- [ ] **ITEM-04**: User can set purchase cost per item for margin analysis
-- [ ] **ITEM-05**: User can edit and soft-delete items
-- [ ] **ITEM-06**: User can search and filter items by type, category, and name
+- [x] **ITEM-01**: User can create items with type (raw material, semi-finished, finished, packaging)
+- [x] **ITEM-02**: User can set unit weight in grams and carton conversion (e.g., 1 ctn = 8 units = 6,800g)
+- [x] **ITEM-03**: User can view SKU legend with uniform format guide for consistent input
+- [x] **ITEM-04**: User can set purchase cost per item for margin analysis
+- [x] **ITEM-05**: User can edit and soft-delete items
+- [x] **ITEM-06**: User can search and filter items by type, category, and name
 
 ### Recipe/BOM
 
@@ -94,12 +94,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1: Foundation | Complete |
 | AUTH-02 | Phase 1: Foundation | Complete |
 | AUTH-03 | Phase 1: Foundation | Complete |
-| ITEM-01 | Phase 1: Foundation | Pending |
-| ITEM-02 | Phase 1: Foundation | Pending |
-| ITEM-03 | Phase 1: Foundation | Pending |
-| ITEM-04 | Phase 1: Foundation | Pending |
-| ITEM-05 | Phase 1: Foundation | Pending |
-| ITEM-06 | Phase 1: Foundation | Pending |
+| ITEM-01 | Phase 1: Foundation | Complete |
+| ITEM-02 | Phase 1: Foundation | Complete |
+| ITEM-03 | Phase 1: Foundation | Complete |
+| ITEM-04 | Phase 1: Foundation | Complete |
+| ITEM-05 | Phase 1: Foundation | Complete |
+| ITEM-06 | Phase 1: Foundation | Complete |
 | STCK-01 | Phase 1: Foundation | Complete |
 | STCK-05 | Phase 1: Foundation | Complete |
 | RECP-01 | Phase 2: Recipe Engine | Pending |
