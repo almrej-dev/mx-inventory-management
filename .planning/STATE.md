@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 1 of 5 (Foundation)
-Plan: 1 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Executing
-Last activity: 2026-03-09 -- Completed 01-01 plan
+Last activity: 2026-03-09 -- Completed 01-03 plan
 
-Progress: [##░░░░░░░░] 9%
+Progress: [####░░░░░░] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 18min
-- Total execution time: 0.3 hours
+- Total plans completed: 3
+- Average duration: 9min
+- Total execution time: 0.5 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 - Foundation | 1 | 18min | 18min |
+| 1 - Foundation | 3 | 28min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 18min
-- Trend: baseline
+- Last 5 plans: 18min, 5min, 5min
+- Trend: accelerating
 
 *Updated after each plan completion*
 
@@ -48,6 +48,9 @@ Recent decisions affecting current work:
 - [01-01]: shadcn/ui v4 uses Base UI (not Radix) -- render prop instead of asChild
 - [01-01]: zod v4 requires standardSchemaResolver for react-hook-form (zodResolver incompatible)
 - [01-01]: Integer storage for weights (milligrams) and costs (centavos) throughout schema
+- [01-03]: receivedDate kept as z.string() in schema (not pipe to date) to avoid standardSchemaResolver type mismatch
+- [01-03]: Atomic ledger pattern: prisma.$transaction wraps ledger insert + stock_qty increment -- all future stock mutations must follow this
+- [01-03]: Sidebar restructured with section headers (NavItem | NavSection union type) for grouped navigation
 
 ### Pending Todos
 
@@ -62,5 +65,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 01-01-PLAN.md (scaffold, auth, RBAC, login, user management)
-Resume file: .planning/phases/01-foundation/01-01-SUMMARY.md
+Stopped at: Completed 01-03-PLAN.md (stock receiving, atomic ledger, transaction history)
+Resume file: .planning/phases/01-foundation/01-03-SUMMARY.md

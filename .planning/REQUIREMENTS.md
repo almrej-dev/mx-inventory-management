@@ -24,11 +24,11 @@
 
 ### Stock Management
 
-- [ ] **STCK-01**: User can record incoming stock with quantity, date, and purchase cost
+- [x] **STCK-01**: User can record incoming stock with quantity, date, and purchase cost
 - [ ] **STCK-02**: User can set low stock threshold per item and see alerts on dashboard
 - [ ] **STCK-03**: User can record waste/spoilage with reason codes
 - [ ] **STCK-04**: User can enter physical counts and view variance against system levels
-- [ ] **STCK-05**: System maintains stock levels via append-only transaction ledger
+- [x] **STCK-05**: System maintains stock levels via append-only transaction ledger
 
 ### Sales
 
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ITEM-04 | Phase 1: Foundation | Pending |
 | ITEM-05 | Phase 1: Foundation | Pending |
 | ITEM-06 | Phase 1: Foundation | Pending |
-| STCK-01 | Phase 1: Foundation | Pending |
-| STCK-05 | Phase 1: Foundation | Pending |
+| STCK-01 | Phase 1: Foundation | Complete |
+| STCK-05 | Phase 1: Foundation | Complete |
 | RECP-01 | Phase 2: Recipe Engine | Pending |
 | RECP-02 | Phase 2: Recipe Engine | Pending |
 | RECP-03 | Phase 2: Recipe Engine | Pending |
