@@ -12,7 +12,7 @@ This roadmap delivers a cloud-hosted inventory management system that auto-calcu
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Auth, item management, stock receiving, and the data model that everything else depends on
+- [x] **Phase 1: Foundation** - Auth, item management, stock receiving, and the data model that everything else depends on
 - [ ] **Phase 2: Recipe Engine** - Multi-level recipe/BOM management with recursive cost calculation
 - [ ] **Phase 3: Sales and Auto-Deduction** - CSV/Excel upload, manual entry, and recipe-based inventory deduction
 - [ ] **Phase 4: Dashboard and Alerts** - Inventory summary, sales reports, bestsellers, and low stock alerts
@@ -33,10 +33,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Scaffold Next.js, Prisma schema, Supabase Auth with RBAC, login, user management
-- [ ] 01-02-PLAN.md — Item CRUD with all four types, search/filter, SKU legend
-- [ ] 01-03-PLAN.md — Stock receiving with atomic ledger pattern, transaction history
-- [ ] 01-04-PLAN.md — Database migration, seed, and full end-to-end verification checkpoint
+- [x] 01-01-PLAN.md — Scaffold Next.js, Prisma schema, Supabase Auth with RBAC, login, user management
+- [x] 01-02-PLAN.md — Item CRUD with all four types, search/filter, SKU legend
+- [x] 01-03-PLAN.md — Stock receiving with atomic ledger pattern, transaction history
+- [x] 01-04-PLAN.md — Database migration, seed, and full end-to-end verification checkpoint
 
 ### Phase 2: Recipe Engine
 **Goal**: Users can define multi-level recipes that link finished products to their ingredients (including sub-recipes and packaging) and see full cost breakdowns
@@ -104,7 +104,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/4 | In Progress |  |
+| 1. Foundation | 4/4 | Complete | 2026-03-09 |
 | 2. Recipe Engine | 0/2 | Not started | - |
 | 3. Sales and Auto-Deduction | 0/2 | Not started | - |
 | 4. Dashboard and Alerts | 0/2 | Not started | - |

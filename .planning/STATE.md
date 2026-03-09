@@ -5,32 +5,32 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Know exactly how much stock is left and when to reorder -- by automatically calculating raw material consumption from sales through multi-level recipes.
-**Current focus:** Phase 1: Foundation
+**Current focus:** Phase 2: Recipe Engine
 
 ## Current Position
 
-Phase: 1 of 5 (Foundation)
-Plan: 3 of 4 in current phase
-Status: Executing
-Last activity: 2026-03-09 -- Completed 01-03 plan
+Phase: 1 of 5 (Foundation) -- COMPLETE
+Plan: 4 of 4 in current phase (all done)
+Status: Phase Complete
+Last activity: 2026-03-09 -- Completed 01-04 plan (Phase 1 verified end-to-end)
 
-Progress: [####░░░░░░] 27%
+Progress: [####░░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 9min
-- Total execution time: 0.5 hours
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 - Foundation | 3 | 28min | 9min |
+| 1 - Foundation | 4 | 33min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 18min, 5min, 5min
+- Last 5 plans: 18min, 5min, 5min, 5min
 - Trend: accelerating
 
 *Updated after each plan completion*
@@ -54,6 +54,9 @@ Recent decisions affecting current work:
 - [01-03]: receivedDate kept as z.string() in schema (not pipe to date) to avoid standardSchemaResolver type mismatch
 - [01-03]: Atomic ledger pattern: prisma.$transaction wraps ledger insert + stock_qty increment -- all future stock mutations must follow this
 - [01-03]: Sidebar restructured with section headers (NavItem | NavSection union type) for grouped navigation
+- [01-04]: Prisma 7 CLI requires explicit --config prisma/prisma.config.ts -- auto-discovery fails for config inside prisma/ directory
+- [01-04]: db:push must use DIRECT_URL (port 5432) not pooler DATABASE_URL (port 6543) -- pooler hangs for schema operations
+- [01-04]: custom_access_token_hook needs SECURITY DEFINER + GRANT SELECT on user_roles to supabase_auth_admin to bypass RLS
 
 ### Pending Todos
 
@@ -68,5 +71,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 01-02-PLAN.md (item CRUD, search/filter, SKU legend)
-Resume file: .planning/phases/01-foundation/01-02-SUMMARY.md
+Stopped at: Completed 01-04-PLAN.md (Phase 1 fully verified end-to-end)
+Resume file: .planning/phases/01-foundation/01-04-SUMMARY.md
+Next: Phase 2 planning (Recipe Engine)
