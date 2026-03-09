@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:push": "dotenv -e .env.local -- sh -c 'pnpm prisma db push --config prisma/prisma.config.ts --url $DIRECT_URL'",
+    "db:seed": "dotenv -e .env.local -- pnpm prisma db seed --config prisma/prisma.config.ts",
+    "db:generate": "dotenv -e .env.local -- pnpm prisma generate --config prisma/prisma.config.ts",
+    "db:studio": "dotenv -e .env.local -- pnpm prisma studio --config prisma/prisma.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -45,7 +49,7 @@
     ]
   },
   "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -54,6 +58,7 @@
     "@types/pg": "^8.18.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "16.1.6",
     "postcss": "^8",
