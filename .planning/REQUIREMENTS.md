@@ -1,7 +1,7 @@
 # Requirements: Ice Cream & Tea Inventory Management System
 
 **Defined:** 2026-03-09
-**Core Value:** Know exactly how much stock is left and when to reorder — by automatically calculating raw material consumption from sales through multi-level recipes.
+**Core Value:** Know exactly how much stock is left and when to reorder -- by automatically calculating raw material consumption from sales through multi-level recipes.
 
 ## v1 Requirements
 
@@ -17,7 +17,7 @@
 ### Recipe/BOM
 
 - [ ] **RECP-01**: User can create recipes linking finished products to their ingredients
-- [ ] **RECP-02**: User can define multi-level recipes (finished → semi-finished → raw materials)
+- [ ] **RECP-02**: User can define multi-level recipes (finished -> semi-finished -> raw materials)
 - [ ] **RECP-03**: User can include packaging materials (cups) as recipe ingredients with quantity
 - [ ] **RECP-04**: System auto-calculates recipe cost from ingredient costs through all levels
 - [ ] **RECP-05**: User can preview full BOM breakdown showing all raw materials across levels
@@ -77,9 +77,9 @@
 
 | Feature | Reason |
 |---------|--------|
-| Multi-location support | Single store only — architecture supports adding store_id later |
+| Multi-location support | Single store only -- architecture supports adding store_id later |
 | Supplier management | No supplier directory or PO generation for v1 |
-| Real-time POS integration | Sales entered via upload or manual — no API integration |
+| Real-time POS integration | Sales entered via upload or manual -- no API integration |
 | Mobile app | Web-first, responsive design sufficient |
 | Barcode scanning | Manual entry for v1 |
 | AI-powered predictions | Low stock thresholds sufficient for v1 |
@@ -91,13 +91,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| AUTH-01 | Phase 1: Foundation | Pending |
+| AUTH-02 | Phase 1: Foundation | Pending |
+| AUTH-03 | Phase 1: Foundation | Pending |
+| ITEM-01 | Phase 1: Foundation | Pending |
+| ITEM-02 | Phase 1: Foundation | Pending |
+| ITEM-03 | Phase 1: Foundation | Pending |
+| ITEM-04 | Phase 1: Foundation | Pending |
+| ITEM-05 | Phase 1: Foundation | Pending |
+| ITEM-06 | Phase 1: Foundation | Pending |
+| STCK-01 | Phase 1: Foundation | Pending |
+| STCK-05 | Phase 1: Foundation | Pending |
+| RECP-01 | Phase 2: Recipe Engine | Pending |
+| RECP-02 | Phase 2: Recipe Engine | Pending |
+| RECP-03 | Phase 2: Recipe Engine | Pending |
+| RECP-04 | Phase 2: Recipe Engine | Pending |
+| RECP-05 | Phase 2: Recipe Engine | Pending |
+| SALE-01 | Phase 3: Sales and Auto-Deduction | Pending |
+| SALE-02 | Phase 3: Sales and Auto-Deduction | Pending |
+| SALE-03 | Phase 3: Sales and Auto-Deduction | Pending |
+| SALE-04 | Phase 3: Sales and Auto-Deduction | Pending |
+| DASH-01 | Phase 4: Dashboard and Alerts | Pending |
+| DASH-02 | Phase 4: Dashboard and Alerts | Pending |
+| DASH-03 | Phase 4: Dashboard and Alerts | Pending |
+| DASH-04 | Phase 4: Dashboard and Alerts | Pending |
+| STCK-02 | Phase 4: Dashboard and Alerts | Pending |
+| STCK-03 | Phase 5: Accuracy and Polish | Pending |
+| STCK-04 | Phase 5: Accuracy and Polish | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- v1 requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-09 after initial definition*
+*Last updated: 2026-03-09 after roadmap creation*
