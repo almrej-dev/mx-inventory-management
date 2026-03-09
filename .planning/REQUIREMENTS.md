@@ -46,9 +46,9 @@
 
 ### Access Control
 
-- [ ] **AUTH-01**: User can log in with email and password
-- [ ] **AUTH-02**: System enforces 3 roles: Admin (full), Staff/Encoder (data entry), Viewer (read-only)
-- [ ] **AUTH-03**: Admin can add/remove users and assign roles
+- [x] **AUTH-01**: User can log in with email and password
+- [x] **AUTH-02**: System enforces 3 roles: Admin (full), Staff/Encoder (data entry), Viewer (read-only)
+- [x] **AUTH-03**: Admin can add/remove users and assign roles
 
 ## v2 Requirements
 
@@ -91,9 +91,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1: Foundation | Pending |
-| AUTH-02 | Phase 1: Foundation | Pending |
-| AUTH-03 | Phase 1: Foundation | Pending |
+| AUTH-01 | Phase 1: Foundation | Complete |
+| AUTH-02 | Phase 1: Foundation | Complete |
+| AUTH-03 | Phase 1: Foundation | Complete |
 | ITEM-01 | Phase 1: Foundation | Pending |
 | ITEM-02 | Phase 1: Foundation | Pending |
 | ITEM-03 | Phase 1: Foundation | Pending |
