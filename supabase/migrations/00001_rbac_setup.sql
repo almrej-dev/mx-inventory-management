@@ -41,6 +41,8 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql STABLE
+SECURITY DEFINER
+SET search_path = 'public'
 AS $$
 DECLARE
   claims jsonb;
@@ -71,6 +73,9 @@ REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook FROM authenticated;
 
 -- Grant usage on the app_role type
 GRANT USAGE ON TYPE public.app_role TO supabase_auth_admin;
+
+-- Grant read access on user_roles to supabase_auth_admin (needed by the hook to query roles)
+GRANT SELECT ON TABLE public.user_roles TO supabase_auth_admin;
 
 -- ============================================
 -- 3. Authorize function for RLS policies
