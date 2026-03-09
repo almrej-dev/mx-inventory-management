@@ -47,11 +47,11 @@ Plans:
   2. User can define multi-level recipes where a finished product uses a semi-finished product that itself has a recipe of raw materials
   3. User can preview the full BOM breakdown showing every raw material and packaging item needed, resolved through all recipe levels
   4. System automatically calculates recipe cost by summing ingredient costs through all levels, and the cost updates when ingredient costs change
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Prisma RecipeIngredient model, RLS migration, BOM explosion/cost logic, recipe Zod schema
+- [ ] 02-02-PLAN.md — Recipe CRUD server actions, dynamic ingredient form, list/detail/BOM preview pages, sidebar navigation
 
 ### Phase 3: Sales and Auto-Deduction
 **Goal**: Users can record sales (via CSV upload or manual entry) and the system automatically deducts raw materials from inventory based on recipe breakdowns
