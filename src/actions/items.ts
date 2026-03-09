@@ -7,7 +7,11 @@ import { gramsToMg, pesosToCentavos, mgToGrams, centavosToPesos } from "@/lib/ut
 import { revalidatePath } from "next/cache";
 
 export async function createItem(rawData: unknown) {
-  await requireRole("staff");
+  try {
+    await requireRole("staff");
+  } catch {
+    return { error: { _form: ["Unauthorized"] } };
+  }
 
   const parsed = itemSchema.safeParse(rawData);
   if (!parsed.success) {
@@ -55,7 +59,11 @@ export async function createItem(rawData: unknown) {
 }
 
 export async function updateItem(id: number, rawData: unknown) {
-  await requireRole("staff");
+  try {
+    await requireRole("staff");
+  } catch {
+    return { error: { _form: ["Unauthorized"] } };
+  }
 
   const parsed = itemSchema.safeParse(rawData);
   if (!parsed.success) {
@@ -104,9 +112,9 @@ export async function updateItem(id: number, rawData: unknown) {
 }
 
 export async function deleteItem(id: number) {
-  await requireRole("staff");
-
   try {
+    await requireRole("staff");
+
     await prisma.item.update({
       where: { id },
       data: { deletedAt: new Date() },

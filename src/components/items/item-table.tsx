@@ -23,14 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ItemWithDisplayValues } from "@/actions/items";
@@ -45,11 +37,6 @@ export function ItemTable({ data }: ItemTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
-  const [deleteDialog, setDeleteDialog] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Extract unique categories for filter dropdown
   const categories = useMemo(() => {
@@ -60,9 +47,18 @@ export function ItemTable({ data }: ItemTableProps) {
     return Array.from(cats).sort();
   }, [data]);
 
-  const handleDelete = useCallback((id: number, name: string) => {
-    setDeleteDialog({ id, name });
-  }, []);
+  const handleDelete = useCallback(async (id: number, name: string) => {
+    if (!window.confirm(`Delete "${name}"? This is a soft-delete.`)) return;
+    try {
+      const result = await deleteItem(id);
+      if (result.error) {
+        console.error("Delete failed:", result.error);
+      }
+      router.refresh();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  }, [router]);
 
   const columns = useMemo(() => getItemColumns({ onDelete: handleDelete }), [handleDelete]);
 
@@ -96,17 +92,6 @@ export function ItemTable({ data }: ItemTableProps) {
     },
   });
 
-  async function confirmDelete() {
-    if (!deleteDialog) return;
-    setIsDeleting(true);
-    try {
-      await deleteItem(deleteDialog.id);
-      router.refresh();
-    } finally {
-      setIsDeleting(false);
-      setDeleteDialog(null);
-    }
-  }
 
   const filteredRowCount = table.getFilteredRowModel().rows.length;
 
@@ -249,40 +234,6 @@ export function ItemTable({ data }: ItemTableProps) {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialog !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteDialog(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Item</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &quot;{deleteDialog?.name}&quot;?
-              This will soft-delete the item -- it will no longer appear in the
-              active list but can be recovered.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialog(null)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
