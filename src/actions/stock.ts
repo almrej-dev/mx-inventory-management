@@ -2,8 +2,8 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { receivingSchema } from "@/schemas/stock";
-import { pesosToCentavos } from "@/lib/utils";
+import { receivingSchema, wasteSchema } from "@/schemas/stock";
+import { pesosToCentavos, gramsToMg } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -86,6 +86,84 @@ export async function receiveStock(rawData: unknown) {
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to record receiving",
+    };
+  }
+}
+
+/**
+ * Record waste or spoilage for an item.
+ *
+ * Uses prisma.$transaction to ATOMICALLY:
+ *   1. Create an inventory_transactions ledger entry (WASTE) with negative quantity
+ *   2. Decrement the item's stock_qty
+ *
+ * Unit interpretation depends on item.type:
+ *   - PACKAGING: user enters in pieces (stock_qty is pieces)
+ *   - All other types: user enters in grams; server converts to milligrams
+ *
+ * CRITICAL: The ledger quantity MUST be negative (waste removes stock).
+ * The decrement value MUST be positive.
+ */
+export async function recordWaste(rawData: unknown) {
+  const { user } = await requireRole("staff");
+
+  const parsed = wasteSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: "Validation failed. Please check your input." };
+  }
+
+  const data = parsed.data;
+
+  try {
+    const item = await prisma.item.findUnique({
+      where: { id: data.itemId },
+    });
+
+    if (!item || item.deletedAt !== null) {
+      return { error: "Item not found" };
+    }
+
+    // Convert user-friendly units to storage units
+    // PACKAGING: user enters pieces -- already correct
+    // All others: user enters grams -- convert to milligrams
+    let wasteQty: number;
+    if (item.type === "PACKAGING") {
+      wasteQty = data.quantity;
+    } else {
+      wasteQty = gramsToMg(data.quantity);
+    }
+
+    const referenceId = `WST-${Date.now()}`;
+
+    // ATOMIC: ledger insert (negative quantity) + stock_qty decrement in one transaction
+    await prisma.$transaction([
+      prisma.inventoryTransaction.create({
+        data: {
+          itemId: data.itemId,
+          type: "WASTE",
+          quantity: -wasteQty, // NEGATIVE -- waste removes stock
+          referenceId,
+          notes: `[${data.reasonCode}] ${data.notes || ""}`.trim(),
+          createdBy: user.id,
+        },
+      }),
+      prisma.item.update({
+        where: { id: data.itemId },
+        data: {
+          stockQty: { decrement: wasteQty },
+        },
+      }),
+    ]);
+
+    revalidatePath("/stock/waste");
+    revalidatePath("/stock/history");
+    revalidatePath("/items");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to record waste",
     };
   }
 }

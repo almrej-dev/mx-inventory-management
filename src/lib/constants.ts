@@ -38,6 +38,15 @@ export const APP_ROLES = [
  *   FN-TP-012 = Finished, Toppings, #012 (e.g., Oreo Cheesecake)
  *   PK-CP-001 = Packaging, Cups, #001 (e.g., 16oz Cup)
  */
+export const WASTE_REASON_CODES = [
+  { value: "EXPIRED", label: "Expired" },
+  { value: "SPOILED", label: "Spoiled / Contaminated" },
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "QUALITY", label: "Quality Issue" },
+  { value: "SPILL", label: "Spilled / Dropped" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
 export const SKU_FORMAT_GUIDE = `Format: {TYPE}-{CATEGORY}-{SEQ}
 
 Type Prefixes:

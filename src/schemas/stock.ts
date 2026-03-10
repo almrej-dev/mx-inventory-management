@@ -9,3 +9,12 @@ export const receivingSchema = z.object({
 });
 
 export type ReceivingFormData = z.infer<typeof receivingSchema>;
+
+export const wasteSchema = z.object({
+  itemId: z.number().int().positive("Select an item"),
+  quantity: z.number().positive("Quantity must be positive"),
+  reasonCode: z.string().min(1, "Select a reason"),
+  notes: z.string().max(500).optional(),
+});
+
+export type WasteFormData = z.infer<typeof wasteSchema>;
