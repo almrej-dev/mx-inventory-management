@@ -20,7 +20,7 @@
 - [x] **RECP-02**: User can define multi-level recipes (finished -> semi-finished -> raw materials)
 - [x] **RECP-03**: User can include packaging materials (cups) as recipe ingredients with quantity
 - [x] **RECP-04**: System auto-calculates recipe cost from ingredient costs through all levels
-- [ ] **RECP-05**: User can preview full BOM breakdown showing all raw materials across levels
+- [x] **RECP-05**: User can preview full BOM breakdown showing all raw materials across levels
 
 ### Stock Management
 
@@ -106,7 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RECP-02 | Phase 2: Recipe Engine | Complete |
 | RECP-03 | Phase 2: Recipe Engine | Complete |
 | RECP-04 | Phase 2: Recipe Engine | Complete |
-| RECP-05 | Phase 2: Recipe Engine | Pending |
+| RECP-05 | Phase 2: Recipe Engine | Complete |
 | SALE-01 | Phase 3: Sales and Auto-Deduction | Pending |
 | SALE-02 | Phase 3: Sales and Auto-Deduction | Pending |
 | SALE-03 | Phase 3: Sales and Auto-Deduction | Pending |

@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 2 of 5 (Recipe Engine)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-03-10 -- Completed 02-01 plan (Recipe data model and BOM logic)
+Phase: 2 of 5 (Recipe Engine) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-03-10 -- Completed 02-02 plan (Recipe CRUD UI, form, pages, sidebar)
 
-Progress: [#####░░░░░] 45%
+Progress: [######░░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 7min
 - Total execution time: 0.6 hours
 
@@ -28,10 +28,10 @@ Progress: [#####░░░░░] 45%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 - Foundation | 4 | 33min | 8min |
-| 2 - Recipe Engine | 1 | 2min | 2min |
+| 2 - Recipe Engine | 2 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 18min, 5min, 5min, 5min, 2min
+- Last 5 plans: 5min, 5min, 5min, 2min, 4min
 - Trend: accelerating
 
 *Updated after each plan completion*
@@ -61,6 +61,9 @@ Recent decisions affecting current work:
 - [02-01]: Application-level recursion over PostgreSQL CTE for BOM explosion -- simpler, type-safe, sufficient for 2-3 level trees
 - [02-01]: Dual quantity fields (quantityMg + quantityPieces) rather than single polymorphic field
 - [02-01]: On-demand cost calculation (never stored) -- ensures costs stay current when ingredient prices change
+- [02-02]: In-memory single-level cost for recipe list to avoid N+1 explodeBom calls; full multi-level cost on detail page only
+- [02-02]: Type-aware ingredient quantity fields: useWatch on childItemId switches between grams (weight) and pieces (packaging) inputs
+- [02-02]: useTransition for recipe form submit pending state -- better matches server action pattern than useForm isSubmitting
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 02-01-PLAN.md (Recipe data model and BOM logic)
-Resume file: .planning/phases/02-recipe-engine/02-01-SUMMARY.md
-Next: Execute 02-02-PLAN.md (Recipe CRUD, UI components, and pages)
+Stopped at: Completed 02-02-PLAN.md (Recipe CRUD UI, form, pages, sidebar)
+Resume file: .planning/phases/02-recipe-engine/02-02-SUMMARY.md
+Next: Phase 2 complete. Begin Phase 3 (Sales & Deductions) research and planning.
