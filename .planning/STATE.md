@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 3 of 5 (Sales & Auto-Deduction)
-Plan: 1 of 3 in current phase
-Status: Executing
-Last activity: 2026-03-10 -- Completed 03-01 plan (Sales data layer and BOM deduction logic)
+Plan: 3 of 3 in current phase
+Status: Phase Complete
+Last activity: 2026-03-10 -- Completed 03-03 plan (Manual entry, sales history, sidebar navigation)
 
-Progress: [#######░░░] 64%
+Progress: [########░░] 82%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 7min
-- Total execution time: 0.7 hours
+- Total plans completed: 9
+- Average duration: 6min
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [#######░░░] 64%
 |-------|-------|-------|----------|
 | 1 - Foundation | 4 | 33min | 8min |
 | 2 - Recipe Engine | 2 | 6min | 3min |
-| 3 - Sales & Deduction | 1 | 4min | 4min |
+| 3 - Sales & Deduction | 3 | 12min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 5min, 5min, 2min, 4min, 4min
+- Last 5 plans: 2min, 4min, 4min, 4min, 4min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -69,6 +69,9 @@ Recent decisions affecting current work:
 - [03-01]: Aggregated deduction map: merge BOM quantities across all sold products before writing ledger entries
 - [03-01]: Prisma 7 db:push P4002 error with cross-schema references -- create tables via direct SQL instead
 - [03-01]: Negative stock allowed by design -- no guard prevents stockQty from going below 0
+- [03-03]: Client-side product loading in manual entry form via useEffect + getFinishedItems -- form is client component
+- [03-03]: Separate sales-columns.tsx from sales-history-table.tsx following established item-columns/item-table pattern
+- [03-03]: Simple HTML table for upload detail page -- TanStack Table unnecessary for read-only detail view
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 03-01-PLAN.md (Sales data layer and BOM deduction logic)
-Resume file: .planning/phases/03-sales-and-auto-deduction/03-01-SUMMARY.md
-Next: Continue Phase 3 with 03-02 (Sales upload UI) and 03-03 (Manual entry and history).
+Stopped at: Completed 03-03-PLAN.md (Manual entry, sales history, sidebar navigation) -- Phase 3 complete
+Resume file: .planning/phases/03-sales-and-auto-deduction/03-03-SUMMARY.md
+Next: Begin Phase 4 (Dashboard & Stock Alerts).
