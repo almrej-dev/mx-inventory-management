@@ -25,7 +25,7 @@
 ### Stock Management
 
 - [x] **STCK-01**: User can record incoming stock with quantity, date, and purchase cost
-- [ ] **STCK-02**: User can set low stock threshold per item and see alerts on dashboard
+- [x] **STCK-02**: User can set low stock threshold per item and see alerts on dashboard
 - [ ] **STCK-03**: User can record waste/spoilage with reason codes
 - [ ] **STCK-04**: User can enter physical counts and view variance against system levels
 - [x] **STCK-05**: System maintains stock levels via append-only transaction ledger
@@ -39,10 +39,10 @@
 
 ### Dashboard & Reports
 
-- [ ] **DASH-01**: Dashboard displays inventory summary (stock levels, total value, low-stock count)
-- [ ] **DASH-02**: Dashboard prioritizes bestseller products by sales volume
-- [ ] **DASH-03**: Dashboard recommends stock items to buy surplus and items to limit buying
-- [ ] **DASH-04**: User can generate sales reports filtered by date range, product, and category
+- [x] **DASH-01**: Dashboard displays inventory summary (stock levels, total value, low-stock count)
+- [x] **DASH-02**: Dashboard prioritizes bestseller products by sales volume
+- [x] **DASH-03**: Dashboard recommends stock items to buy surplus and items to limit buying
+- [x] **DASH-04**: User can generate sales reports filtered by date range, product, and category
 
 ### Access Control
 
@@ -111,11 +111,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SALE-02 | Phase 3: Sales and Auto-Deduction | Complete |
 | SALE-03 | Phase 3: Sales and Auto-Deduction | Complete |
 | SALE-04 | Phase 3: Sales and Auto-Deduction | Complete |
-| DASH-01 | Phase 4: Dashboard and Alerts | Pending |
-| DASH-02 | Phase 4: Dashboard and Alerts | Pending |
-| DASH-03 | Phase 4: Dashboard and Alerts | Pending |
-| DASH-04 | Phase 4: Dashboard and Alerts | Pending |
-| STCK-02 | Phase 4: Dashboard and Alerts | Pending |
+| DASH-01 | Phase 4: Dashboard and Alerts | Complete |
+| DASH-02 | Phase 4: Dashboard and Alerts | Complete |
+| DASH-03 | Phase 4: Dashboard and Alerts | Complete |
+| DASH-04 | Phase 4: Dashboard and Alerts | Complete |
+| STCK-02 | Phase 4: Dashboard and Alerts | Complete |
 | STCK-03 | Phase 5: Accuracy and Polish | Pending |
 | STCK-04 | Phase 5: Accuracy and Polish | Pending |
 

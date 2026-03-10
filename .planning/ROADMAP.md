@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Auth, item management, stock receiving, and the data model that everything else depends on
 - [x] **Phase 2: Recipe Engine** - Multi-level recipe/BOM management with recursive cost calculation (completed 2026-03-10)
 - [x] **Phase 3: Sales and Auto-Deduction** - CSV/Excel upload, manual entry, and recipe-based inventory deduction (completed 2026-03-10)
-- [ ] **Phase 4: Dashboard and Alerts** - Inventory summary, sales reports, bestsellers, and low stock alerts
+- [x] **Phase 4: Dashboard and Alerts** - Inventory summary, sales reports, bestsellers, and low stock alerts (completed 2026-03-10)
 - [ ] **Phase 5: Accuracy and Polish** - Waste recording, physical count reconciliation, and data integrity
 
 ## Phase Details
@@ -65,9 +65,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Prisma SalesUpload/SalesLine models, RLS migration, Zod schemas, processSalesLines server action with BOM deduction
-- [ ] 03-02-PLAN.md — CSV/Excel upload flow with PapaParse/SheetJS parsing, column mapping, validation preview, and confirm
-- [ ] 03-03-PLAN.md — Manual sales entry form, sales history pages, upload detail page, sidebar navigation
+- [x] 03-01-PLAN.md — Prisma SalesUpload/SalesLine models, RLS migration, Zod schemas, processSalesLines server action with BOM deduction
+- [x] 03-02-PLAN.md — CSV/Excel upload flow with PapaParse/SheetJS parsing, column mapping, validation preview, and confirm
+- [x] 03-03-PLAN.md — Manual sales entry form, sales history pages, upload detail page, sidebar navigation
 
 ### Phase 4: Dashboard and Alerts
 **Goal**: Users open the app and immediately see what needs attention -- low stock items, bestsellers, inventory value, and actionable reports
@@ -82,8 +82,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Dashboard server actions and main page with summary cards, bestsellers, low-stock alerts, reorder recommendations
-- [ ] 04-02-PLAN.md — Sales reports page with date range/product/category filters, date picker components, sidebar navigation
+- [x] 04-01-PLAN.md — Dashboard server actions and main page with summary cards, bestsellers, low-stock alerts, reorder recommendations
+- [x] 04-02-PLAN.md — Sales reports page with date range/product/category filters, date picker components, sidebar navigation
 
 ### Phase 5: Accuracy and Polish
 **Goal**: Users can maintain data accuracy over time by recording waste, performing physical counts, and reconciling system vs reality
@@ -108,5 +108,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 4/4 | Complete | 2026-03-09 |
 | 2. Recipe Engine | 0/2 | Complete    | 2026-03-10 |
 | 3. Sales and Auto-Deduction | 0/3 | Complete    | 2026-03-10 |
-| 4. Dashboard and Alerts | 0/2 | Not started | - |
+| 4. Dashboard and Alerts | 2/2 | Complete | 2026-03-10 |
 | 5. Accuracy and Polish | 0/1 | Not started | - |

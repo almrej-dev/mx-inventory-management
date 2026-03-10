@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Know exactly how much stock is left and when to reorder -- by automatically calculating raw material consumption from sales through multi-level recipes.
-**Current focus:** Phase 3: Sales & Auto-Deduction
+**Current focus:** Phase 4: Dashboard & Alerts
 
 ## Current Position
 
-Phase: 3 of 5 (Sales & Auto-Deduction)
-Plan: 3 of 3 in current phase
+Phase: 4 of 5 (Dashboard & Alerts)
+Plan: 2 of 2 in current phase
 Status: Phase Complete
-Last activity: 2026-03-10 -- Completed 03-03 plan (Manual entry, sales history, sidebar navigation)
+Last activity: 2026-03-10 -- Completed 04-02 plan (Sales reports with filters)
 
-Progress: [########░░] 82%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 6min
-- Total execution time: 0.8 hours
+- Total plans completed: 11
+- Average duration: 5min
+- Total execution time: 0.92 hours
 
 **By Phase:**
 
@@ -30,12 +30,15 @@ Progress: [########░░] 82%
 | 1 - Foundation | 4 | 33min | 8min |
 | 2 - Recipe Engine | 2 | 6min | 3min |
 | 3 - Sales & Deduction | 3 | 12min | 4min |
+| 4 - Dashboard & Alerts | 2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 2min, 4min, 4min, 4min, 4min
+- Last 5 plans: 4min, 4min, 4min, 3min, 4min
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 04 P01 | 3min | 2 tasks | 6 files |
+| Phase 04 P02 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -77,6 +80,13 @@ Recent decisions affecting current work:
 - [03-03]: Client-side product loading in manual entry form via useEffect + getFinishedItems -- form is client component
 - [03-03]: Separate sales-columns.tsx from sales-history-table.tsx following established item-columns/item-table pattern
 - [03-03]: Simple HTML table for upload detail page -- TanStack Table unnecessary for read-only detail view
+- [04-01]: Division-by-zero guard on cartonSize/cartonWeightMg in inventory value calculation
+- [04-01]: Application-level filtering for low-stock (Prisma cannot compare two columns in WHERE clause)
+- [04-01]: Surplus threshold at 3x minStockQty; severity coloring: red for critical (<=0), amber for warning
+- [04-02]: Base UI render prop for PopoverTrigger (render={<Button />}) consistent with dialog.tsx pattern
+- [04-02]: Native HTML selects for report filters -- consistent with project pattern of simple state management
+- [04-02]: Simple HTML table for report results -- TanStack Table unnecessary for read-only filtered data
+- [04-02]: Default date range set to last 30 days for immediate usability
 
 ### Pending Todos
 
@@ -91,6 +101,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 03-03-PLAN.md (Manual entry, sales history, sidebar navigation) -- Phase 3 complete
-Resume file: .planning/phases/03-sales-and-auto-deduction/03-03-SUMMARY.md
-Next: Begin Phase 4 (Dashboard & Stock Alerts).
+Stopped at: Completed 04-02-PLAN.md (Sales reports with filters) -- Phase 4 complete
+Resume file: .planning/phases/04-dashboard-and-alerts/04-02-SUMMARY.md
+Next: Begin Phase 5 (Operational Extras).
