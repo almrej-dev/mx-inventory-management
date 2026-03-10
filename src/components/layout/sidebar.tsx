@@ -16,6 +16,7 @@ import {
   FileUp,
   PenLine,
   ReceiptText,
+  BarChart3,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -89,6 +90,12 @@ const navigation: NavEntry[] = [
         roles: ["admin", "staff", "viewer"],
       },
     ],
+  },
+  {
+    name: "Reports",
+    href: "/reports",
+    icon: BarChart3,
+    roles: ["admin", "staff", "viewer"],
   },
   {
     label: "Stock",
