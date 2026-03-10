@@ -1,10 +1,12 @@
-datasource db {
-  provider = "postgresql"
-}
 
 generator client {
   provider = "prisma-client-js"
 }
+
+datasource db {
+  provider = "postgresql"
+}
+        
 
 enum ItemType {
   RAW_MATERIAL
@@ -13,6 +15,7 @@ enum ItemType {
   PACKAGING
 
   @@map("item_type")
+
 }
 
 enum TransactionType {
@@ -22,6 +25,7 @@ enum TransactionType {
   ADJUSTMENT
 
   @@map("transaction_type")
+
 }
 
 model Item {
@@ -44,7 +48,10 @@ model Item {
   recipeIngredients RecipeIngredient[] @relation("RecipeParent")
   usedInRecipes     RecipeIngredient[] @relation("RecipeChild")
 
+  salesLines SalesLine[]
+
   @@map("items")
+
 }
 
 model InventoryTransaction {
@@ -62,6 +69,7 @@ model InventoryTransaction {
 
   @@index([itemId, createdAt])
   @@map("inventory_transactions")
+
 }
 
 model RecipeIngredient {
@@ -76,6 +84,41 @@ model RecipeIngredient {
 
   @@unique([parentItemId, childItemId])
   @@map("recipe_ingredients")
+
+}
+
+model SalesUpload {
+  id           Int       @id @default(autoincrement())
+  fileName     String?   @map("file_name")
+  source       String    @default("upload")
+  status       String    @default("pending")
+  totalLines   Int       @default(0) @map("total_lines")
+  matchedLines Int       @default(0) @map("matched_lines")
+  saleDate     DateTime  @map("sale_date")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  createdBy    String    @map("created_by")
+
+  lines SalesLine[]
+
+  @@map("sales_uploads")
+
+}
+
+model SalesLine {
+  id               Int     @id @default(autoincrement())
+  uploadId         Int     @map("upload_id")
+  itemId           Int     @map("item_id")
+  productName      String  @map("product_name")
+  quantity         Int
+  unitPriceCentavos Int?   @map("unit_price_centavos")
+  deducted         Boolean @default(false)
+
+  upload SalesUpload @relation(fields: [uploadId], references: [id])
+  item   Item        @relation(fields: [itemId], references: [id])
+
+  @@map("sales_lines")
+
 }
 
 model Profile {
@@ -84,4 +127,5 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("profiles")
+
 }
