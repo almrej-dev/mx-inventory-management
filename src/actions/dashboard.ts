@@ -2,15 +2,48 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  startOfDay,
+  subDays,
+  startOfWeek,
+  format,
+} from "date-fns";
+
+/**
+ * Compute the inventory value (in centavos) of a single item by converting
+ * its stockQty back to "carton equivalents" and multiplying by costCentavos.
+ *
+ * - PACKAGING: stockQty is pieces, so value = (stockQty / cartonSize) * costCentavos
+ * - Others: stockQty is milligrams, so value = (stockQty / (cartonSize * unitWeightMg)) * costCentavos
+ */
+function itemValueCentavos(item: {
+  type: string;
+  stockQty: number;
+  costCentavos: number;
+  cartonSize: number;
+  unitWeightMg: number;
+}): number {
+  if (item.type === "PACKAGING") {
+    if (item.cartonSize > 0) {
+      return Math.round(
+        (item.stockQty / item.cartonSize) * item.costCentavos
+      );
+    }
+    return 0;
+  }
+
+  const cartonWeightMg = item.cartonSize * item.unitWeightMg;
+  if (cartonWeightMg > 0) {
+    return Math.round(
+      (item.stockQty / cartonWeightMg) * item.costCentavos
+    );
+  }
+  return 0;
+}
 
 /**
  * Dashboard summary: total items, inventory value, low-stock count, and
  * this month's transaction count.
- *
- * Inventory value is computed per-item by converting stockQty back to
- * "carton equivalents" and multiplying by costCentavos (cost per carton).
- * - PACKAGING: stockQty is pieces, so value = (stockQty / cartonSize) * costCentavos
- * - Others: stockQty is milligrams, so value = (stockQty / (cartonSize * unitWeightMg)) * costCentavos
  */
 export async function getDashboardSummary() {
   await requireRole("viewer");
@@ -32,31 +65,13 @@ export async function getDashboardSummary() {
   let lowStockCount = 0;
 
   for (const item of items) {
-    // Calculate inventory value in centavos
-    if (item.type === "PACKAGING") {
-      // stockQty is pieces, cost is per carton (cartonSize pieces per carton)
-      if (item.cartonSize > 0) {
-        totalValueCentavos += Math.round(
-          (item.stockQty / item.cartonSize) * item.costCentavos
-        );
-      }
-    } else {
-      // stockQty is milligrams, cost is per carton
-      const cartonWeightMg = item.cartonSize * item.unitWeightMg;
-      if (cartonWeightMg > 0) {
-        totalValueCentavos += Math.round(
-          (item.stockQty / cartonWeightMg) * item.costCentavos
-        );
-      }
-    }
+    totalValueCentavos += itemValueCentavos(item);
 
-    // Count low-stock items (only those with a threshold set)
     if (item.minStockQty > 0 && item.stockQty < item.minStockQty) {
       lowStockCount++;
     }
   }
 
-  // Count this month's inventory transactions
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -167,4 +182,273 @@ export async function getReorderRecommendations() {
   }
 
   return { reorder, surplus };
+}
+
+/**
+ * Sales summary: yesterday and this-week totals from SalesLine.
+ * Fetches all lines from the week start in a single query, then
+ * partitions into yesterday vs. full-week totals.
+ */
+export async function getSalesSummary() {
+  await requireRole("viewer");
+
+  const now = new Date();
+  const yesterdayStart = startOfDay(subDays(now, 1));
+  const yesterdayEnd = startOfDay(now);
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+  const weekLines = await prisma.salesLine.findMany({
+    where: {
+      upload: {
+        saleDate: { gte: weekStart },
+        status: { not: "pending" },
+      },
+    },
+    select: {
+      quantity: true,
+      unitPriceCentavos: true,
+      upload: { select: { saleDate: true } },
+    },
+  });
+
+  let yesterdayCentavos = 0;
+  let weekCentavos = 0;
+
+  for (const line of weekLines) {
+    const revenue = line.quantity * (line.unitPriceCentavos || 0);
+    weekCentavos += revenue;
+    if (line.upload.saleDate >= yesterdayStart && line.upload.saleDate < yesterdayEnd) {
+      yesterdayCentavos += revenue;
+    }
+  }
+
+  return { yesterdayCentavos, weekCentavos };
+}
+
+/**
+ * Daily sales totals for the last 7 days for bar chart.
+ * Fetches all lines in the date range with a single query, then
+ * groups by day in application code.
+ */
+export async function getWeeklySalesChart() {
+  await requireRole("viewer");
+
+  const now = new Date();
+  const rangeStart = startOfDay(subDays(now, 6));
+  const rangeEnd = startOfDay(subDays(now, -1));
+
+  const lines = await prisma.salesLine.findMany({
+    where: {
+      upload: {
+        saleDate: { gte: rangeStart, lt: rangeEnd },
+        status: { not: "pending" },
+      },
+    },
+    select: {
+      quantity: true,
+      unitPriceCentavos: true,
+      upload: { select: { saleDate: true } },
+    },
+  });
+
+  // Build a map of date-key -> total centavos
+  const dailyTotals = new Map<string, number>();
+  for (const line of lines) {
+    const key = format(startOfDay(line.upload.saleDate), "MM/dd");
+    const revenue = line.quantity * (line.unitPriceCentavos || 0);
+    dailyTotals.set(key, (dailyTotals.get(key) || 0) + revenue);
+  }
+
+  // Build the result array for each of the 7 days
+  const days: { date: string; label: string; totalCentavos: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const day = startOfDay(subDays(now, i));
+    const dateKey = format(day, "MM/dd");
+    days.push({
+      date: dateKey,
+      label: format(day, "EEE"),
+      totalCentavos: dailyTotals.get(dateKey) || 0,
+    });
+  }
+
+  return days;
+}
+
+/**
+ * Receiving summary: this week's received items and pending count.
+ */
+export async function getReceivingSummary() {
+  await requireRole("viewer");
+
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+  const receivedThisWeek = await prisma.inventoryTransaction.findMany({
+    where: {
+      type: "RECEIVE",
+      createdAt: { gte: weekStart },
+    },
+    select: { costCentavos: true },
+  });
+
+  let receivedValueCentavos = 0;
+  for (const tx of receivedThisWeek) {
+    receivedValueCentavos += tx.costCentavos || 0;
+  }
+
+  return { receivedValueCentavos, receivedCount: receivedThisWeek.length };
+}
+
+/**
+ * Inventory value broken down by item category (for donut chart).
+ */
+export async function getInventoryByCategory() {
+  await requireRole("viewer");
+
+  const items = await prisma.item.findMany({
+    where: { deletedAt: null },
+    select: {
+      category: true,
+      type: true,
+      stockQty: true,
+      costCentavos: true,
+      unitWeightMg: true,
+      cartonSize: true,
+    },
+  });
+
+  const categoryMap = new Map<string, number>();
+
+  for (const item of items) {
+    const cat = item.category || item.type;
+    const value = itemValueCentavos(item);
+    categoryMap.set(cat, (categoryMap.get(cat) || 0) + value);
+  }
+
+  return Array.from(categoryMap.entries())
+    .map(([category, valueCentavos]) => ({ category, valueCentavos }))
+    .sort((a, b) => b.valueCentavos - a.valueCentavos);
+}
+
+/**
+ * Waste summary: today, yesterday, and this week's waste totals + recent waste items.
+ */
+export async function getWasteSummary() {
+  await requireRole("viewer");
+
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const yesterdayStart = startOfDay(subDays(now, 1));
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+  const wasteTransactions = await prisma.inventoryTransaction.findMany({
+    where: {
+      type: "WASTE",
+      createdAt: { gte: weekStart },
+    },
+    include: {
+      item: { select: { name: true, sku: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  let todayCentavos = 0;
+  let yesterdayCentavos = 0;
+  let weekCentavos = 0;
+
+  for (const tx of wasteTransactions) {
+    const cost = tx.costCentavos || 0;
+    weekCentavos += cost;
+    if (tx.createdAt >= todayStart) {
+      todayCentavos += cost;
+    } else if (tx.createdAt >= yesterdayStart && tx.createdAt < todayStart) {
+      yesterdayCentavos += cost;
+    }
+  }
+
+  const recentItems = wasteTransactions.slice(0, 5).map((tx) => ({
+    id: tx.id,
+    itemName: tx.item.name,
+    quantity: tx.quantity,
+    costCentavos: tx.costCentavos || 0,
+    createdAt: tx.createdAt,
+  }));
+
+  return { todayCentavos, yesterdayCentavos, weekCentavos, recentItems };
+}
+
+/**
+ * Recent inventory transactions for the activity feed.
+ */
+export async function getRecentTransactions(limit: number = 5) {
+  await requireRole("viewer");
+
+  const transactions = await prisma.inventoryTransaction.findMany({
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: {
+      item: { select: { name: true, sku: true } },
+    },
+  });
+
+  return transactions.map((tx) => ({
+    id: tx.id,
+    type: tx.type,
+    itemName: tx.item.name,
+    quantity: tx.quantity,
+    costCentavos: tx.costCentavos,
+    notes: tx.notes,
+    createdAt: tx.createdAt,
+  }));
+}
+
+/**
+ * Weekly transaction volume by type for trends chart.
+ * Fetches all transactions in the 5-week range with a single query, then
+ * buckets by week in application code.
+ */
+export async function getWeeklyTransactionTrends() {
+  await requireRole("viewer");
+
+  const now = new Date();
+  const rangeStart = startOfDay(subDays(now, 5 * 7));
+  const rangeEnd = startOfDay(now);
+
+  const transactions = await prisma.inventoryTransaction.findMany({
+    where: {
+      createdAt: { gte: rangeStart, lt: rangeEnd },
+    },
+    select: { type: true, createdAt: true },
+  });
+
+  // Build week boundaries (oldest first)
+  const weekBoundaries: { begin: Date; end: Date; label: string }[] = [];
+  for (let i = 4; i >= 0; i--) {
+    const begin = startOfDay(subDays(now, (i + 1) * 7));
+    const end = startOfDay(subDays(now, i * 7));
+    weekBoundaries.push({ begin, end, label: format(begin, "MM/dd") });
+  }
+
+  // Initialize counters per week
+  const weekCounters = weekBoundaries.map((w) => ({
+    label: w.label,
+    receives: 0,
+    sales: 0,
+    waste: 0,
+  }));
+
+  // Bucket each transaction into the correct week
+  for (const tx of transactions) {
+    const txTime = tx.createdAt.getTime();
+    for (let w = 0; w < weekBoundaries.length; w++) {
+      if (txTime >= weekBoundaries[w].begin.getTime() && txTime < weekBoundaries[w].end.getTime()) {
+        if (tx.type === "RECEIVE") weekCounters[w].receives++;
+        else if (tx.type === "SALE_DEDUCTION") weekCounters[w].sales++;
+        else if (tx.type === "WASTE") weekCounters[w].waste++;
+        break;
+      }
+    }
+  }
+
+  return weekCounters;
 }

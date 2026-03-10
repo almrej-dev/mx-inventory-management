@@ -5,15 +5,9 @@ import { BomPreview } from "@/components/recipes/bom-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleGate } from "@/components/layout/role-gate";
-import { createClient } from "@/lib/supabase/server";
-import { jwtDecode } from "jwt-decode";
+import { getAuth } from "@/lib/auth";
 import { ITEM_TYPES } from "@/lib/constants";
 import { Pencil } from "lucide-react";
-import type { AppRole } from "@/types";
-
-interface JwtPayload {
-  user_role?: AppRole;
-}
 
 const typeLabels: Record<string, string> = {};
 for (const t of ITEM_TYPES) {
@@ -43,17 +37,7 @@ export default async function RecipeDetailPage({
     notFound();
   }
 
-  // Get user role for conditional UI
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  let userRole: AppRole = "viewer";
-  if (session) {
-    const jwt = jwtDecode<JwtPayload>(session.access_token);
-    userRole = jwt.user_role || "viewer";
-  }
+  const { userRole } = await getAuth();
 
   return (
     <div className="space-y-6">

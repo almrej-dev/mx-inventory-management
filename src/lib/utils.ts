@@ -20,6 +20,14 @@ export function centavosToPesos(centavos: number): string {
   return (centavos / 100).toFixed(2);
 }
 
+/** Format centavos as a Philippine Peso display string (e.g. "₱1,234.56") */
+export function formatPesos(centavos: number): string {
+  return `₱${Number(centavosToPesos(centavos)).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 /** Convert display pesos to integer centavos */
 export function pesosToCentavos(pesos: number): number {
   return Math.round(pesos * 100);

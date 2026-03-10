@@ -3,28 +3,11 @@ import { getItems } from "@/actions/items";
 import { ItemTable } from "@/components/items/item-table";
 import { Button } from "@/components/ui/button";
 import { RoleGate } from "@/components/layout/role-gate";
-import { createClient } from "@/lib/supabase/server";
-import { jwtDecode } from "jwt-decode";
+import { getAuth } from "@/lib/auth";
 import { Plus } from "lucide-react";
-import type { AppRole } from "@/types";
-
-interface JwtPayload {
-  user_role?: AppRole;
-}
 
 export default async function ItemsPage() {
-  // Get user role for conditional UI
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  let userRole: AppRole = "viewer";
-  if (session) {
-    const jwt = jwtDecode<JwtPayload>(session.access_token);
-    userRole = jwt.user_role || "viewer";
-  }
-
+  const { userRole } = await getAuth();
   const result = await getItems();
 
   if (result.error) {

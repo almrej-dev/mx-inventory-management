@@ -3,28 +3,11 @@ import { getRecipes } from "@/actions/recipes";
 import { RecipeTable } from "@/components/recipes/recipe-table";
 import { Button } from "@/components/ui/button";
 import { RoleGate } from "@/components/layout/role-gate";
-import { createClient } from "@/lib/supabase/server";
-import { jwtDecode } from "jwt-decode";
+import { getAuth } from "@/lib/auth";
 import { Plus } from "lucide-react";
-import type { AppRole } from "@/types";
-
-interface JwtPayload {
-  user_role?: AppRole;
-}
 
 export default async function RecipesPage() {
-  // Get user role for conditional UI
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  let userRole: AppRole = "viewer";
-  if (session) {
-    const jwt = jwtDecode<JwtPayload>(session.access_token);
-    userRole = jwt.user_role || "viewer";
-  }
-
+  const { userRole } = await getAuth();
   const result = await getRecipes();
 
   if (result.error) {
