@@ -62,11 +62,12 @@ Plans:
   2. User can manually enter individual sales when no POS export is available
   3. After sales are confirmed, system auto-deducts all raw materials and packaging from inventory by recursively exploding recipes through all BOM levels
   4. User can view sales history and see which uploaded files have been processed
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — Prisma SalesUpload/SalesLine models, RLS migration, Zod schemas, processSalesLines server action with BOM deduction
+- [ ] 03-02-PLAN.md — CSV/Excel upload flow with PapaParse/SheetJS parsing, column mapping, validation preview, and confirm
+- [ ] 03-03-PLAN.md — Manual sales entry form, sales history pages, upload detail page, sidebar navigation
 
 ### Phase 4: Dashboard and Alerts
 **Goal**: Users open the app and immediately see what needs attention -- low stock items, bestsellers, inventory value, and actionable reports
@@ -106,6 +107,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-03-09 |
 | 2. Recipe Engine | 0/2 | Complete    | 2026-03-10 |
-| 3. Sales and Auto-Deduction | 0/2 | Not started | - |
+| 3. Sales and Auto-Deduction | 0/3 | Not started | - |
 | 4. Dashboard and Alerts | 0/2 | Not started | - |
 | 5. Accuracy and Polish | 0/1 | Not started | - |
