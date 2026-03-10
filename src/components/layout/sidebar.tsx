@@ -18,6 +18,7 @@ import {
   ReceiptText,
   BarChart3,
   Trash2,
+  ClipboardCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -112,6 +113,12 @@ const navigation: NavEntry[] = [
         name: "Waste",
         href: "/stock/waste",
         icon: Trash2,
+        roles: ["admin", "staff"],
+      },
+      {
+        name: "Reconciliation",
+        href: "/stock/reconciliation",
+        icon: ClipboardCheck,
         roles: ["admin", "staff"],
       },
       {
