@@ -93,10 +93,11 @@ Plans:
   1. User can record waste/spoilage events with a reason code and the stock level adjusts accordingly
   2. User can enter physical count numbers and view the variance between system-calculated levels and actual counts
   3. All stock adjustments (waste, reconciliation) appear in the transaction ledger with user, timestamp, and reason for full audit trail
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md — Waste recording with reason codes, atomic ledger deduction, form, and sidebar navigation
+- [ ] 05-02-PLAN.md — Physical count reconciliation with variance preview, batch adjustments, and sidebar navigation
 
 ## Progress
 
@@ -109,4 +110,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Recipe Engine | 0/2 | Complete    | 2026-03-10 |
 | 3. Sales and Auto-Deduction | 0/3 | Complete    | 2026-03-10 |
 | 4. Dashboard and Alerts | 2/2 | Complete    | 2026-03-10 |
-| 5. Accuracy and Polish | 0/1 | Not started | - |
+| 5. Accuracy and Polish | 0/2 | Not started | - |
