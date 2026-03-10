@@ -41,6 +41,9 @@ model Item {
 
   transactions InventoryTransaction[]
 
+  recipeIngredients RecipeIngredient[] @relation("RecipeParent")
+  usedInRecipes     RecipeIngredient[] @relation("RecipeChild")
+
   @@map("items")
 }
 
@@ -59,6 +62,20 @@ model InventoryTransaction {
 
   @@index([itemId, createdAt])
   @@map("inventory_transactions")
+}
+
+model RecipeIngredient {
+  id             Int @id @default(autoincrement())
+  parentItemId   Int @map("parent_item_id")
+  childItemId    Int @map("child_item_id")
+  quantityMg     Int @map("quantity_mg")
+  quantityPieces Int @default(0) @map("quantity_pieces")
+
+  parentItem Item @relation("RecipeParent", fields: [parentItemId], references: [id])
+  childItem  Item @relation("RecipeChild", fields: [childItemId], references: [id])
+
+  @@unique([parentItemId, childItemId])
+  @@map("recipe_ingredients")
 }
 
 model Profile {
