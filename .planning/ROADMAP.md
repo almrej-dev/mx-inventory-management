@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Auth, item management, stock receiving, and the data model that everything else depends on
 - [x] **Phase 2: Recipe Engine** - Multi-level recipe/BOM management with recursive cost calculation (completed 2026-03-10)
-- [ ] **Phase 3: Sales and Auto-Deduction** - CSV/Excel upload, manual entry, and recipe-based inventory deduction
+- [x] **Phase 3: Sales and Auto-Deduction** - CSV/Excel upload, manual entry, and recipe-based inventory deduction (completed 2026-03-10)
 - [ ] **Phase 4: Dashboard and Alerts** - Inventory summary, sales reports, bestsellers, and low stock alerts
 - [ ] **Phase 5: Accuracy and Polish** - Waste recording, physical count reconciliation, and data integrity
 
@@ -107,6 +107,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-03-09 |
 | 2. Recipe Engine | 0/2 | Complete    | 2026-03-10 |
-| 3. Sales and Auto-Deduction | 0/3 | Not started | - |
+| 3. Sales and Auto-Deduction | 0/3 | Complete    | 2026-03-10 |
 | 4. Dashboard and Alerts | 0/2 | Not started | - |
 | 5. Accuracy and Polish | 0/1 | Not started | - |
