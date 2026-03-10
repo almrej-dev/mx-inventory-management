@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 5 of 5 (Accuracy and Polish)
-Plan: 2 of 2 in current phase
+Plan: 3 of 3 in current phase
 Status: Complete
-Last activity: 2026-03-10 -- Completed 05-02 plan (Physical inventory reconciliation)
+Last activity: 2026-03-10 -- Completed 05-03 plan (User identity display in transaction history)
 
 Progress: [##########] 100%
 
@@ -39,6 +39,7 @@ Progress: [##########] 100%
 *Updated after each plan completion*
 | Phase 04 P01 | 3min | 2 tasks | 6 files |
 | Phase 04 P02 | 4min | 2 tasks | 9 files |
+| Phase 05 P03 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [05-02]: Reconciliation uses absolute SET for stockQty (not increment/decrement) -- physical count is the truth; ADJUSTMENT ledger records variance delta for audit trail
 - [05-02]: ops array typed as TxOp union (ReturnType of create | update) to satisfy prisma.$transaction array overload -- Parameters<typeof prisma.$transaction>[0] resolves to callback overload
 - [05-02]: Variance preview in display units (grams/pieces) -- user thinks in display units; server converts back to storage units on submit
+- [Phase 05-03]: Separate profiles lookup query (not Prisma relation) to avoid migration on Supabase-managed profiles table
+- [Phase 05-03]: Fallback to truncated UUID (first 8 chars) when profile not found -- prevents blank User cell in audit trail
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 05-02-PLAN.md (Physical inventory reconciliation with live variance preview)
-Resume file: .planning/phases/05-accuracy-and-polish/05-02-SUMMARY.md
+Stopped at: Completed 05-03-PLAN.md (User identity display in transaction history -- all phase 5 success criteria met)
+Resume file: .planning/phases/05-accuracy-and-polish/05-03-SUMMARY.md
 Next: All phases complete. System ready for production.
