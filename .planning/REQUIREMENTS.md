@@ -27,7 +27,7 @@
 - [x] **STCK-01**: User can record incoming stock with quantity, date, and purchase cost
 - [x] **STCK-02**: User can set low stock threshold per item and see alerts on dashboard
 - [x] **STCK-03**: User can record waste/spoilage with reason codes
-- [ ] **STCK-04**: User can enter physical counts and view variance against system levels
+- [x] **STCK-04**: User can enter physical counts and view variance against system levels
 - [x] **STCK-05**: System maintains stock levels via append-only transaction ledger
 
 ### Sales
@@ -117,7 +117,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-04 | Phase 4: Dashboard and Alerts | Complete |
 | STCK-02 | Phase 4: Dashboard and Alerts | Complete |
 | STCK-03 | Phase 5: Accuracy and Polish | Complete |
-| STCK-04 | Phase 5: Accuracy and Polish | Pending |
+| STCK-04 | Phase 5: Accuracy and Polish | Complete |
 
 **Coverage:**
 - v1 requirements: 27 total

@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 5 of 5 (Accuracy and Polish)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-03-10 -- Completed 05-01 plan (Waste recording)
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-03-10 -- Completed 05-02 plan (Physical inventory reconciliation)
 
 Progress: [##########] 100%
 
@@ -90,6 +90,9 @@ Recent decisions affecting current work:
 - [05-01]: Waste form accepts grams (weight items) or pieces (PACKAGING) -- server converts grams to milligrams via gramsToMg()
 - [05-01]: Waste reason codes stored as [CODE] text prefix in notes field -- no separate DB table (fixed small set, no CRUD needed)
 - [05-01]: Waste ledger quantity is negative; stockQty uses decrement with positive value -- matches sale deduction sign convention
+- [05-02]: Reconciliation uses absolute SET for stockQty (not increment/decrement) -- physical count is the truth; ADJUSTMENT ledger records variance delta for audit trail
+- [05-02]: ops array typed as TxOp union (ReturnType of create | update) to satisfy prisma.$transaction array overload -- Parameters<typeof prisma.$transaction>[0] resolves to callback overload
+- [05-02]: Variance preview in display units (grams/pieces) -- user thinks in display units; server converts back to storage units on submit
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 05-01-PLAN.md (Waste recording with reason codes and atomic ledger)
-Resume file: .planning/phases/05-accuracy-and-polish/05-01-SUMMARY.md
-Next: Execute 05-02 (Physical inventory reconciliation).
+Stopped at: Completed 05-02-PLAN.md (Physical inventory reconciliation with live variance preview)
+Resume file: .planning/phases/05-accuracy-and-polish/05-02-SUMMARY.md
+Next: All phases complete. System ready for production.
