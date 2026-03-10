@@ -79,11 +79,11 @@ Plans:
   3. Dashboard recommends items to reorder (low/out of stock) and items to limit buying (surplus)
   4. User can generate sales reports filtered by date range, product, and category
   5. User can set a low stock threshold per item and see alerts on the dashboard when stock falls below it
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Dashboard server actions and main page with summary cards, bestsellers, low-stock alerts, reorder recommendations
+- [ ] 04-02-PLAN.md — Sales reports page with date range/product/category filters, date picker components, sidebar navigation
 
 ### Phase 5: Accuracy and Polish
 **Goal**: Users can maintain data accuracy over time by recording waste, performing physical counts, and reconciling system vs reality
