@@ -101,6 +101,7 @@ export default async function TransactionHistoryPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Quantity</TableHead>
@@ -119,6 +120,9 @@ export default async function TransactionHistoryPage() {
                   <TableRow key={tx.id}>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(tx.createdAt), "MMM d, yyyy HH:mm")}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {tx.userName}
                     </TableCell>
                     <TableCell>
                       <div>
