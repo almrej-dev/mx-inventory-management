@@ -34,7 +34,7 @@
 
 - [ ] **SALE-01**: User can upload sales data via CSV or Excel file with validation and preview
 - [ ] **SALE-02**: User can manually enter sales when no export is available
-- [ ] **SALE-03**: System auto-deducts raw materials from inventory based on recipe breakdowns
+- [x] **SALE-03**: System auto-deducts raw materials from inventory based on recipe breakdowns
 - [ ] **SALE-04**: User can view sales history and past uploaded files
 
 ### Dashboard & Reports
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RECP-05 | Phase 2: Recipe Engine | Complete |
 | SALE-01 | Phase 3: Sales and Auto-Deduction | Pending |
 | SALE-02 | Phase 3: Sales and Auto-Deduction | Pending |
-| SALE-03 | Phase 3: Sales and Auto-Deduction | Pending |
+| SALE-03 | Phase 3: Sales and Auto-Deduction | Complete |
 | SALE-04 | Phase 3: Sales and Auto-Deduction | Pending |
 | DASH-01 | Phase 4: Dashboard and Alerts | Pending |
 | DASH-02 | Phase 4: Dashboard and Alerts | Pending |

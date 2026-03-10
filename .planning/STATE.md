@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Know exactly how much stock is left and when to reorder -- by automatically calculating raw material consumption from sales through multi-level recipes.
-**Current focus:** Phase 2: Recipe Engine
+**Current focus:** Phase 3: Sales & Auto-Deduction
 
 ## Current Position
 
-Phase: 2 of 5 (Recipe Engine) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-03-10 -- Completed 02-02 plan (Recipe CRUD UI, form, pages, sidebar)
+Phase: 3 of 5 (Sales & Auto-Deduction)
+Plan: 1 of 3 in current phase
+Status: Executing
+Last activity: 2026-03-10 -- Completed 03-01 plan (Sales data layer and BOM deduction logic)
 
-Progress: [######░░░░] 55%
+Progress: [#######░░░] 64%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 7min
-- Total execution time: 0.6 hours
+- Total execution time: 0.7 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [######░░░░] 55%
 |-------|-------|-------|----------|
 | 1 - Foundation | 4 | 33min | 8min |
 | 2 - Recipe Engine | 2 | 6min | 3min |
+| 3 - Sales & Deduction | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 5min, 5min, 5min, 2min, 4min
-- Trend: accelerating
+- Last 5 plans: 5min, 5min, 2min, 4min, 4min
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -64,6 +65,10 @@ Recent decisions affecting current work:
 - [02-02]: In-memory single-level cost for recipe list to avoid N+1 explodeBom calls; full multi-level cost on detail page only
 - [02-02]: Type-aware ingredient quantity fields: useWatch on childItemId switches between grams (weight) and pieces (packaging) inputs
 - [02-02]: useTransition for recipe form submit pending state -- better matches server action pattern than useForm isSubmitting
+- [03-01]: Two-phase transaction: BOM explosion outside transaction, all writes inside single prisma.$transaction
+- [03-01]: Aggregated deduction map: merge BOM quantities across all sold products before writing ledger entries
+- [03-01]: Prisma 7 db:push P4002 error with cross-schema references -- create tables via direct SQL instead
+- [03-01]: Negative stock allowed by design -- no guard prevents stockQty from going below 0
 
 ### Pending Todos
 
@@ -78,6 +83,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 02-02-PLAN.md (Recipe CRUD UI, form, pages, sidebar)
-Resume file: .planning/phases/02-recipe-engine/02-02-SUMMARY.md
-Next: Phase 2 complete. Begin Phase 3 (Sales & Deductions) research and planning.
+Stopped at: Completed 03-01-PLAN.md (Sales data layer and BOM deduction logic)
+Resume file: .planning/phases/03-sales-and-auto-deduction/03-01-SUMMARY.md
+Next: Continue Phase 3 with 03-02 (Sales upload UI) and 03-03 (Manual entry and history).
