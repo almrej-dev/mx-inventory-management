@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Know exactly how much stock is left and when to reorder -- by automatically calculating raw material consumption from sales through multi-level recipes.
-**Current focus:** Phase 4: Dashboard & Alerts
+**Current focus:** Phase 5: Accuracy and Polish
 
 ## Current Position
 
-Phase: 4 of 5 (Dashboard & Alerts)
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-03-10 -- Completed 04-02 plan (Sales reports with filters)
+Phase: 5 of 5 (Accuracy and Polish)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-03-10 -- Completed 05-01 plan (Waste recording)
 
 Progress: [##########] 100%
 
@@ -87,6 +87,9 @@ Recent decisions affecting current work:
 - [04-02]: Native HTML selects for report filters -- consistent with project pattern of simple state management
 - [04-02]: Simple HTML table for report results -- TanStack Table unnecessary for read-only filtered data
 - [04-02]: Default date range set to last 30 days for immediate usability
+- [05-01]: Waste form accepts grams (weight items) or pieces (PACKAGING) -- server converts grams to milligrams via gramsToMg()
+- [05-01]: Waste reason codes stored as [CODE] text prefix in notes field -- no separate DB table (fixed small set, no CRUD needed)
+- [05-01]: Waste ledger quantity is negative; stockQty uses decrement with positive value -- matches sale deduction sign convention
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 04-02-PLAN.md (Sales reports with filters) -- Phase 4 complete
-Resume file: .planning/phases/04-dashboard-and-alerts/04-02-SUMMARY.md
-Next: Begin Phase 5 (Operational Extras).
+Stopped at: Completed 05-01-PLAN.md (Waste recording with reason codes and atomic ledger)
+Resume file: .planning/phases/05-accuracy-and-polish/05-01-SUMMARY.md
+Next: Execute 05-02 (Physical inventory reconciliation).
