@@ -18,3 +18,17 @@ export const processSalesSchema = z.object({
 });
 
 export type ProcessSalesData = z.infer<typeof processSalesSchema>;
+
+export const manualEntryLineSchema = z.object({
+  itemId: z.number().int().positive("Select a product"),
+  quantity: z.number().int().positive("Quantity must be at least 1"),
+  unitPricePesos: z.number().nonnegative("Price cannot be negative").optional(),
+});
+
+export const manualEntrySchema = z.object({
+  saleDate: z.string().min(1, "Sale date is required"),
+  lines: z.array(manualEntryLineSchema).min(1, "At least one sales line is required"),
+  notes: z.string().max(500).optional(),
+});
+
+export type ManualEntryFormData = z.infer<typeof manualEntrySchema>;
