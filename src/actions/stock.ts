@@ -212,7 +212,24 @@ export async function getTransactionHistory(filters?: {
       },
     });
 
-    return { transactions };
+    // Resolve createdBy UUIDs to human-readable display names via the profiles table.
+    // The profiles table is managed by Supabase auth triggers -- we use a separate
+    // lookup query instead of a Prisma relation to avoid requiring a migration.
+    const userIds = [...new Set(transactions.map((tx) => tx.createdBy))];
+
+    const profiles = await prisma.profile.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, fullName: true },
+    });
+
+    const profileMap = new Map(profiles.map((p) => [p.id, p.fullName]));
+
+    const enriched = transactions.map((tx) => ({
+      ...tx,
+      userName: profileMap.get(tx.createdBy) ?? tx.createdBy.slice(0, 8),
+    }));
+
+    return { transactions: enriched };
   } catch (err) {
     return {
       error:
