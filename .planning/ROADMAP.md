@@ -98,7 +98,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Waste recording with reason codes, atomic ledger deduction, form, and sidebar navigation
 - [x] 05-02-PLAN.md — Physical count reconciliation with variance preview, batch adjustments, and sidebar navigation
-- [ ] 05-03-PLAN.md — Gap closure: add user identity display to transaction history (audit trail completeness)
+- [x] 05-03-PLAN.md — Gap closure: add user identity display to transaction history (audit trail completeness)
 
 ## Progress
 
