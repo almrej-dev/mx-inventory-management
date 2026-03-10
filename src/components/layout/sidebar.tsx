@@ -13,6 +13,9 @@ import {
   ClipboardList,
   History,
   Users,
+  FileUp,
+  PenLine,
+  ReceiptText,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -59,6 +62,30 @@ const navigation: NavEntry[] = [
         name: "All Recipes",
         href: "/recipes",
         icon: BookOpen,
+        roles: ["admin", "staff", "viewer"],
+      },
+    ],
+  },
+  {
+    label: "Sales",
+    roles: ["admin", "staff", "viewer"],
+    items: [
+      {
+        name: "Upload Sales",
+        href: "/sales/upload",
+        icon: FileUp,
+        roles: ["admin", "staff"],
+      },
+      {
+        name: "Manual Entry",
+        href: "/sales/manual",
+        icon: PenLine,
+        roles: ["admin", "staff"],
+      },
+      {
+        name: "Sales History",
+        href: "/sales/history",
+        icon: ReceiptText,
         roles: ["admin", "staff", "viewer"],
       },
     ],
