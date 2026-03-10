@@ -18,3 +18,15 @@ export const wasteSchema = z.object({
 });
 
 export type WasteFormData = z.infer<typeof wasteSchema>;
+
+export const reconciliationCountSchema = z.object({
+  itemId: z.number().int().positive(),
+  physicalCount: z.number().nonnegative("Count cannot be negative"),
+});
+
+export const reconciliationSchema = z.object({
+  counts: z.array(reconciliationCountSchema).min(1, "Enter at least one count"),
+  notes: z.string().max(500).optional(),
+});
+
+export type ReconciliationFormData = z.infer<typeof reconciliationSchema>;
