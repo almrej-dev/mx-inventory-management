@@ -69,6 +69,11 @@ Recent decisions affecting current work:
 - [03-01]: Aggregated deduction map: merge BOM quantities across all sold products before writing ledger entries
 - [03-01]: Prisma 7 db:push P4002 error with cross-schema references -- create tables via direct SQL instead
 - [03-01]: Negative stock allowed by design -- no guard prevents stockQty from going below 0
+- [03-02]: Client-side parsing with PapaParse (CSV) and SheetJS (Excel) for instant preview without server upload
+- [03-02]: SheetJS installed from CDN URL (0.20.3) -- npm registry version (0.18.5) is outdated
+- [03-02]: Auto-skip column mapper when suggestMapping detects all required fields (product + quantity)
+- [03-02]: Simple HTML table for upload preview (not TanStack Table) -- one-time preview, not a reusable data table
+- [03-02]: Product matching by case-insensitive SKU first, then name -- no fuzzy matching
 - [03-03]: Client-side product loading in manual entry form via useEffect + getFinishedItems -- form is client component
 - [03-03]: Separate sales-columns.tsx from sales-history-table.tsx following established item-columns/item-table pattern
 - [03-03]: Simple HTML table for upload detail page -- TanStack Table unnecessary for read-only detail view
