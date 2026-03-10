@@ -93,11 +93,12 @@ Plans:
   1. User can record waste/spoilage events with a reason code and the stock level adjusts accordingly
   2. User can enter physical count numbers and view the variance between system-calculated levels and actual counts
   3. All stock adjustments (waste, reconciliation) appear in the transaction ledger with user, timestamp, and reason for full audit trail
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Waste recording with reason codes, atomic ledger deduction, form, and sidebar navigation
-- [ ] 05-02-PLAN.md — Physical count reconciliation with variance preview, batch adjustments, and sidebar navigation
+- [x] 05-01-PLAN.md — Waste recording with reason codes, atomic ledger deduction, form, and sidebar navigation
+- [x] 05-02-PLAN.md — Physical count reconciliation with variance preview, batch adjustments, and sidebar navigation
+- [ ] 05-03-PLAN.md — Gap closure: add user identity display to transaction history (audit trail completeness)
 
 ## Progress
 
