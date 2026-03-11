@@ -65,7 +65,7 @@ export function ProductForm(props: ProductFormProps) {
         ? (props as ProductFormEditProps).defaultValues
         : {
             ingredients: [
-              { childItemId: 0, quantityGrams: 0, quantityPieces: 0 }
+              { childItemId: 0, quantityGrams: NaN, quantityPieces: NaN }
             ]
           }
   });
@@ -182,7 +182,7 @@ export function ProductForm(props: ProductFormProps) {
             variant="outline"
             size="sm"
             onClick={() =>
-              append({ childItemId: 0, quantityGrams: 0, quantityPieces: 0 })
+              append({ childItemId: 0, quantityGrams: NaN, quantityPieces: NaN })
             }
           >
             <Plus className="mr-1 h-3 w-3" />
@@ -204,7 +204,6 @@ export function ProductForm(props: ProductFormProps) {
             const selectedItem = ingredientItems.find(
               (item) => item.id === childItemId
             );
-            console.log(selectedItem);
             const unitType = selectedItem?.unitType ?? 'grams';
             return (
               <ItemRow
