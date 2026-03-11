@@ -3,8 +3,35 @@
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { itemSchema } from "@/schemas/item";
-import { gramsToMg, pesosToCentavos, mgToGrams, centavosToPesos } from "@/lib/utils";
+import { gramsToMg, pesosToCentavos, mgToGrams, centavosToPesos, formatPesos } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+
+const ITEM_TYPE_LABELS: Record<string, string> = {
+  RAW_MATERIAL: "Raw Material",
+  SEMI_FINISHED: "Semi-Finished",
+  FINISHED: "Finished",
+  PACKAGING: "Packaging",
+};
+
+function buildItemChanges(item: {
+  type: string;
+  unitType: string;
+  category: string | null;
+  unitWeightMg: number;
+  cartonSize: number;
+  costCentavos: number;
+  minStockQty: number;
+}) {
+  return {
+    "Type": ITEM_TYPE_LABELS[item.type] ?? item.type,
+    "Category": item.category ?? "—",
+    "Unit": item.unitType,
+    "Unit weight": item.unitType === "pcs" ? `${item.cartonSize} pcs` : `${mgToGrams(item.unitWeightMg)} g`,
+    "Carton size": item.cartonSize,
+    "Cost": formatPesos(item.costCentavos),
+    "Min stock qty": item.minStockQty,
+  };
+}
 
 export async function createItem(rawData: unknown) {
   let authUser: { id: string };
@@ -49,6 +76,7 @@ export async function createItem(rawData: unknown) {
           entityName: item.name,
           entitySku: item.sku,
           action: "CREATE",
+          changes: buildItemChanges(item),
           createdBy: authUser.id,
         },
       });
@@ -120,6 +148,7 @@ export async function updateItem(id: number, rawData: unknown) {
           entityName: item.name,
           entitySku: item.sku,
           action: "UPDATE",
+          changes: buildItemChanges(item),
           createdBy: authUser.id,
         },
       });
@@ -159,7 +188,6 @@ export async function deleteItem(id: number) {
   try {
     const existing = await prisma.item.findUnique({
       where: { id },
-      select: { name: true, sku: true },
     });
     if (!existing) return { error: "Item not found" };
 
@@ -175,6 +203,7 @@ export async function deleteItem(id: number) {
           entityName: existing.name,
           entitySku: existing.sku,
           action: "DELETE",
+          changes: buildItemChanges(existing),
           createdBy: authUser.id,
         },
       });

@@ -167,6 +167,7 @@ model AuditLog {
   entityName String          @map("entity_name")
   entitySku  String          @map("entity_sku")
   action     AuditAction
+  changes    Json?
   createdBy  String          @map("created_by")
   createdAt  DateTime        @default(now()) @map("created_at")
 

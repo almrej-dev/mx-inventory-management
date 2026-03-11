@@ -2,6 +2,7 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { formatPesos } from "@/lib/utils";
 
 export type LogFilter = "all" | "items" | "products" | "stocks";
 
@@ -13,14 +14,21 @@ export type LogEntry = {
   action: string; // CREATE | UPDATE | DELETE | RECEIVE | WASTE | ADJUSTMENT | SALE_DEDUCTION
   userName: string; // resolved from profiles; falls back to uuid.slice(0, 8)
   createdAt: Date;
+  changes?: Record<string, unknown>; // field snapshot captured at write time
 };
 
+/** Returns the current date in Philippine Time (UTC+8) as "YYYY-MM-DD". */
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return toPhtDate(new Date());
+}
+
+/** Converts a UTC Date to its "YYYY-MM-DD" representation in Philippine Time (UTC+8). */
+function toPhtDate(d: Date): string {
+  return d.toLocaleString("sv-SE", { timeZone: "Asia/Manila" }).slice(0, 10);
 }
 
 /**
- * Returns the UTC date strings of the earliest and most recent log entries
+ * Returns the PHT date strings of the earliest and most recent log entries
  * across both AuditLog and InventoryTransaction, or null if no logs exist.
  */
 export async function getLogDateBounds(): Promise<{
@@ -65,8 +73,8 @@ export async function getLogDateBounds(): Promise<{
 
     const ms = allDates.map((d) => d.getTime());
     return {
-      earliest: new Date(Math.min(...ms)).toISOString().slice(0, 10),
-      latest: new Date(Math.max(...ms)).toISOString().slice(0, 10),
+      earliest: toPhtDate(new Date(Math.min(...ms))),
+      latest: toPhtDate(new Date(Math.max(...ms))),
     };
   } catch {
     return null;
@@ -95,9 +103,10 @@ export async function getLogs(
   }
 
   try {
-    const start = new Date(`${from}T00:00:00.000Z`);
-    // end is the start of the day AFTER `to`, making `to` inclusive
-    const end = new Date(new Date(`${to}T00:00:00.000Z`).getTime() + 86_400_000);
+    // Interpret from/to as PHT (UTC+8) days: midnight PHT = 16:00 UTC previous day
+    const start = new Date(`${from}T00:00:00.000+08:00`);
+    // end is the start of the PHT day AFTER `to`, making `to` inclusive
+    const end = new Date(new Date(`${to}T00:00:00.000+08:00`).getTime() + 86_400_000);
 
     const dateWhere = { createdAt: { gte: start, lt: end } };
 
@@ -156,17 +165,27 @@ export async function getLogs(
       action: row.action,
       userName: resolveName(row.createdBy),
       createdAt: row.createdAt,
+      changes: row.changes as Record<string, unknown> | undefined,
     }));
 
-    const stockEntries: LogEntry[] = stockRows.map((row) => ({
-      id: `tx-${row.id}`,
-      entityType: "STOCK",
-      entityName: row.item.name,
-      entitySku: row.item.sku,
-      action: row.type,
-      userName: resolveName(row.createdBy),
-      createdAt: row.createdAt,
-    }));
+    const stockEntries: LogEntry[] = stockRows.map((row) => {
+      const changes: Record<string, unknown> = {
+        "Quantity": row.quantity,
+      };
+      if (row.costCentavos != null) changes["Cost"] = formatPesos(row.costCentavos);
+      if (row.notes) changes["Notes"] = row.notes;
+      if (row.referenceId) changes["Reference"] = row.referenceId;
+      return {
+        id: `tx-${row.id}`,
+        entityType: "STOCK",
+        entityName: row.item.name,
+        entitySku: row.item.sku,
+        action: row.type,
+        userName: resolveName(row.createdBy),
+        createdAt: row.createdAt,
+        changes,
+      };
+    });
 
     const logs = [...auditEntries, ...stockEntries].sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime()

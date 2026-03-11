@@ -9,6 +9,20 @@ import type { BomLine } from "@/lib/bom";
 import { gramsToMg, mgToGrams, centavosToPesos } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
+async function fetchIngredientChanges(parentItemId: number) {
+  const rows = await prisma.recipeIngredient.findMany({
+    where: { parentItemId },
+    include: { childItem: { select: { name: true, sku: true, unitType: true } } },
+  });
+  const ingredients = rows.map((r) => {
+    const qtyParts: string[] = [];
+    if (r.quantityMg > 0) qtyParts.push(`${mgToGrams(r.quantityMg)} g`);
+    if (r.quantityPieces > 0) qtyParts.push(`${r.quantityPieces} pcs`);
+    return `${r.childItem.name} (${r.childItem.sku}): ${qtyParts.join(" + ") || "0"}`;
+  });
+  return { "Ingredients": ingredients };
+}
+
 export async function createProduct(
   productType: "FINISHED" | "SEMI_FINISHED",
   name: string,
@@ -92,6 +106,7 @@ export async function createProduct(
     });
 
     try {
+      const changes = await fetchIngredientChanges(result.id);
       await prisma.auditLog.create({
         data: {
           entityType: "PRODUCT",
@@ -99,6 +114,7 @@ export async function createProduct(
           entityName: result.name,
           entitySku: result.sku,
           action: "CREATE",
+          changes,
           createdBy: authUser.id,
         },
       });
@@ -205,6 +221,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
     });
 
     try {
+      const changes = await fetchIngredientChanges(parentItemId);
       await prisma.auditLog.create({
         data: {
           entityType: "PRODUCT",
@@ -212,6 +229,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
           entityName: snapshot.name,
           entitySku: snapshot.sku,
           action: "UPDATE",
+          changes,
           createdBy: authUser.id,
         },
       });
@@ -253,6 +271,8 @@ export async function deleteProduct(parentItemId: number) {
     });
     if (!snapshot) return { success: true }; // nothing to log; treat as idempotent
 
+    const changes = await fetchIngredientChanges(parentItemId);
+
     await prisma.recipeIngredient.deleteMany({
       where: { parentItemId },
     });
@@ -265,6 +285,7 @@ export async function deleteProduct(parentItemId: number) {
           entityName: snapshot.name,
           entitySku: snapshot.sku,
           action: "DELETE",
+          changes,
           createdBy: authUser.id,
         },
       });
