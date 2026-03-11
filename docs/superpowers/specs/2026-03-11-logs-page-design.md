@@ -250,8 +250,21 @@ export type LogEntry = {
 
 export async function getLogs(
   filter: LogFilter = 'all',
-  limit = 100
+  date: string = todayIso()   // 'YYYY-MM-DD' — defaults to today (server local date)
 ): Promise<{ logs: LogEntry[]; error?: string }>
+
+// Helper (in the same file, not exported):
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);  // 'YYYY-MM-DD'
+}
+```
+
+**Date window:** All queries filter `createdAt >= startOfDay` and `createdAt < startOfNextDay` using UTC day boundaries:
+
+```ts
+const start = new Date(`${date}T00:00:00.000Z`);
+const end   = new Date(`${date}T00:00:00.000Z`);
+end.setUTCDate(end.getUTCDate() + 1);  // exclusive upper bound
 ```
 
 **Implementation:**
@@ -262,26 +275,31 @@ try { await requireRole('admin') }
 catch { return { logs: [], error: 'Unauthorized' } }
 
 try {
+  start = new Date(`${date}T00:00:00.000Z`)
+  end   = new Date(start); end.setUTCDate(end.getUTCDate() + 1)
+
+  dateWhere = { createdAt: { gte: start, lt: end } }
+
   includeAudit  = filter === 'all' || filter === 'items' || filter === 'products'
   includeStocks = filter === 'all' || filter === 'stocks'
 
   // Build queries
   auditQuery = includeAudit
     ? prisma.auditLog.findMany({
-        where:
-          filter === 'items'    ? { entityType: 'ITEM' } :
-          filter === 'products' ? { entityType: 'PRODUCT' } :
-          {},  // 'all' — no entityType filter
+        where: {
+          ...dateWhere,
+          ...(filter === 'items'    ? { entityType: 'ITEM' }    : {}),
+          ...(filter === 'products' ? { entityType: 'PRODUCT' } : {}),
+        },
         orderBy: { createdAt: 'desc' },
-        take: limit,
       })
     : Promise.resolve([])
 
   stockQuery = includeStocks
     ? prisma.inventoryTransaction.findMany({
+        where: dateWhere,
         include: { item: { select: { name: true, sku: true } } },
         orderBy: { createdAt: 'desc' },
-        take: limit,
       })
     : Promise.resolve([])
 
@@ -316,12 +334,9 @@ try {
     createdAt: row.createdAt,
   }))
 
+  // Merge and sort — no slice needed (already date-bounded per-day)
   merged = [...auditEntries, ...stockEntries]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, limit)
-
-  // Per-source limit of `limit` is intentional — merged result may over-represent
-  // the source with more recent activity. Acceptable for a capped admin view.
 
   return { logs: merged }
 
@@ -347,16 +362,18 @@ import { LogsClient } from './logs-client';
 export default async function LogsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; date?: string }>;
 }) {
   const { userRole } = await getAuth();
   if (userRole !== 'admin') redirect('/');
 
-  const { filter: rawFilter } = await searchParams;
+  const { filter: rawFilter, date: rawDate } = await searchParams;
   const filter = (rawFilter ?? 'all') as LogFilter;
-  const { logs, error } = await getLogs(filter);
+  const today = new Date().toISOString().slice(0, 10);   // 'YYYY-MM-DD'
+  const date = rawDate ?? today;
+  const { logs, error } = await getLogs(filter, date);
 
-  return <LogsClient initialLogs={logs} activeFilter={filter} error={error} />;
+  return <LogsClient initialLogs={logs} activeFilter={filter} activeDate={date} today={today} error={error} />;
 }
 ```
 
@@ -366,7 +383,7 @@ export default async function LogsPage({
 
 ### Client component: `src/app/(dashboard)/logs/logs-client.tsx`
 
-Props: `{ initialLogs: LogEntry[], activeFilter: LogFilter, error?: string }`
+Props: `{ initialLogs: LogEntry[], activeFilter: LogFilter, activeDate: string, today: string, error?: string }`
 
 **Layout:**
 ```
@@ -375,20 +392,41 @@ Props: `{ initialLogs: LogEntry[], activeFilter: LogFilter, error?: string }`
 
 [Filter tabs: All | Items | Products | Stocks]
 
+[Date navigation row]
+  ← Prev   |   March 11, 2026   |   Next →
+
 [Table]
-  Date & Time | User | Category | Action | Name / SKU
+  Time | User | Category | Action | Name / SKU
 ```
 
 **Filter tab links and active state:**
 
 | Tab | `href` | Active when |
 |---|---|---|
-| All | `/logs` | `activeFilter === 'all'` |
-| Items | `/logs?filter=items` | `activeFilter === 'items'` |
-| Products | `/logs?filter=products` | `activeFilter === 'products'` |
-| Stocks | `/logs?filter=stocks` | `activeFilter === 'stocks'` |
+| All | `/logs?date={activeDate}` | `activeFilter === 'all'` |
+| Items | `/logs?date={activeDate}&filter=items` | `activeFilter === 'items'` |
+| Products | `/logs?date={activeDate}&filter=products` | `activeFilter === 'products'` |
+| Stocks | `/logs?date={activeDate}&filter=stocks` | `activeFilter === 'stocks'` |
 
-The `All` tab uses `href="/logs"` (no param) as the canonical URL. The page defaults `filter` to `'all'` when no param is present, so `/logs` and `/logs?filter=all` behave identically but `/logs` is canonical.
+When `activeFilter === 'all'`, the `All` tab omits the `filter` param: `href="/logs?date={activeDate}"`.
+
+**Date navigation:**
+
+Prev and Next are `<Link>` elements pointing to the same page with an adjusted `date` param. Date arithmetic is done in the client component using simple string-to-Date conversion:
+
+```ts
+function shiftDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+```
+
+- Prev link: `href="/logs?date={shiftDate(activeDate, -1)}&filter=..."` — always shown
+- Next link: `href="/logs?date={shiftDate(activeDate, +1)}&filter=..."` — disabled (grayed, non-clickable) when `activeDate >= today` to prevent navigating into the future
+- Date label: formatted as `"March 11, 2026"` using `date-fns format(parseISO(activeDate), 'MMMM d, yyyy')` (date-fns is already a dependency)
+
+**Table column change:** The "Date & Time" column becomes just "Time" (since all rows are already scoped to the same day, showing the full date is redundant). Display as `HH:mm` or `HH:mm:ss`.
 
 **Action badge colors** (replaces `/stock/history` badge colors — that page is being removed):
 
@@ -432,8 +470,7 @@ Remove only the `/stock/history` line from each (leave all other `revalidatePath
 
 ## 6. Out of Scope
 
-- Pagination beyond the `limit` param (100 entries default is sufficient for now)
 - Storing field-level diffs (old/new values) on updates
 - Logs for sales uploads or user management actions
-- Balancing the per-source row count when merging (biased merge is acceptable)
 - Making audit writes atomic with primary DB writes (silent failure on audit write is acceptable)
+- Timezone-aware day boundaries (UTC day boundaries are used throughout)
