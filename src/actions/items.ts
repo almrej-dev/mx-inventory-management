@@ -115,9 +115,8 @@ export async function deleteItem(id: number) {
   try {
     await requireRole("staff");
 
-    await prisma.item.update({
+    await prisma.item.delete({
       where: { id },
-      data: { deletedAt: new Date() },
     });
 
     revalidatePath("/items");
@@ -134,13 +133,13 @@ export interface ItemWithDisplayValues {
   sku: string;
   name: string;
   type: string;
+  unitType: string;
   category: string | null;
   unitWeightMg: number;
   cartonSize: number;
   costCentavos: number;
   stockQty: number;
   minStockQty: number;
-  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   weightGrams: string;
@@ -155,7 +154,7 @@ export async function getItems(filters?: {
   await requireRole("viewer");
 
   try {
-    const where: Record<string, unknown> = { deletedAt: null };
+    const where: Record<string, unknown> = {};
     const andConditions: Record<string, unknown>[] = [];
 
     if (filters?.search) {
@@ -206,7 +205,7 @@ export async function getItem(id: number) {
       where: { id },
     });
 
-    if (!item || item.deletedAt) {
+    if (!item) {
       return null;
     }
 

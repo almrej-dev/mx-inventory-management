@@ -11,6 +11,7 @@ interface EditItemClientProps {
     name: string;
     sku: string;
     type: "RAW_MATERIAL" | "SEMI_FINISHED" | "FINISHED" | "PACKAGING";
+    unitType: "grams" | "pcs";
     category: string | null;
     unitWeightMg: number;
     cartonSize: number;
@@ -42,6 +43,7 @@ export function EditItemClient({ item }: EditItemClientProps) {
         name: item.name,
         sku: item.sku,
         type: item.type,
+        unitType: item.unitType,
         category: item.category,
         unitWeightMg: item.unitWeightMg,
         cartonSize: item.cartonSize,

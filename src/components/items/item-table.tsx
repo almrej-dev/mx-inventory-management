@@ -16,6 +16,15 @@ import { ITEM_TYPES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -47,20 +56,31 @@ export function ItemTable({ data }: ItemTableProps) {
     return Array.from(cats).sort();
   }, [data]);
 
-  const handleDelete = useCallback(async (id: number, name: string) => {
-    if (!window.confirm(`Delete "${name}"? This is a soft-delete.`)) return;
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteRequest = useCallback((id: number, name: string) => {
+    setDeleteTarget({ id, name });
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      const result = await deleteItem(id);
+      const result = await deleteItem(deleteTarget.id);
       if (result.error) {
         console.error("Delete failed:", result.error);
       }
+      setDeleteTarget(null);
       router.refresh();
     } catch (err) {
       console.error("Delete failed:", err);
+    } finally {
+      setIsDeleting(false);
     }
-  }, [router]);
+  }, [deleteTarget, router]);
 
-  const columns = useMemo(() => getItemColumns({ onDelete: handleDelete }), [handleDelete]);
+  const columns = useMemo(() => getItemColumns({ onDelete: handleDeleteRequest }), [handleDeleteRequest]);
 
   const table = useReactTable({
     data,
@@ -234,6 +254,24 @@ export function ItemTable({ data }: ItemTableProps) {
         </div>
       )}
 
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Delete Item</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &ldquo;{deleteTarget?.name}&rdquo;? This will permanently remove the item and all its related transactions, recipes, and sales data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" disabled={isDeleting} />}>
+              Cancel
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
