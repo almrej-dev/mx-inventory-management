@@ -68,8 +68,8 @@ export function WasteForm({ items }: WasteFormProps) {
 
     try {
       const payload = {
-        itemId: Number(formData.itemId),
-        quantity: Number(formData.quantity),
+        itemId: formData.itemId,
+        quantity: formData.quantity,
         reasonCode: formData.reasonCode,
         notes: formData.notes || undefined,
       };
@@ -113,18 +113,32 @@ export function WasteForm({ items }: WasteFormProps) {
       {/* Item Selector */}
       <div className="space-y-2">
         <Label htmlFor="itemId">Item</Label>
-        <select
-          id="itemId"
-          {...register("itemId", { valueAsNumber: true })}
-          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        >
-          <option value={0}>Select an item...</option>
-          {items.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} ({item.sku}) - {item.type.replace("_", " ")}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="itemId"
+            {...register("itemId", { valueAsNumber: true })}
+            className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value={0}>Select an item...</option>
+            {items.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} ({item.sku}) - {item.type.replace("_", " ")}
+              </option>
+            ))}
+          </select>
+          <svg
+            className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
         {errors.itemId && (
           <p className="text-sm text-destructive">{errors.itemId.message}</p>
         )}
@@ -148,18 +162,32 @@ export function WasteForm({ items }: WasteFormProps) {
       {/* Reason Code */}
       <div className="space-y-2">
         <Label htmlFor="reasonCode">Reason</Label>
-        <select
-          id="reasonCode"
-          {...register("reasonCode")}
-          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        >
-          <option value="">Select a reason...</option>
-          {WASTE_REASON_CODES.map((code) => (
-            <option key={code.value} value={code.value}>
-              {code.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="reasonCode"
+            {...register("reasonCode")}
+            className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="">Select a reason...</option>
+            {WASTE_REASON_CODES.map((code) => (
+              <option key={code.value} value={code.value}>
+                {code.label}
+              </option>
+            ))}
+          </select>
+          <svg
+            className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
         {errors.reasonCode && (
           <p className="text-sm text-destructive">
             {errors.reasonCode.message}

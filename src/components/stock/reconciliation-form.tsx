@@ -78,10 +78,14 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
   // Count items that have a non-zero variance (would be adjusted on submit)
   const discrepantCount = useMemo(() => {
     return items.filter((item) => {
-      const variance = getVariance(item);
-      return variance !== null && variance !== 0;
+      const raw = counts[item.id];
+      if (raw === undefined || raw === "") return false;
+      const physical = parseFloat(raw);
+      if (isNaN(physical)) return false;
+      const system = storageToDisplay(item.stockQty, item.type);
+      const variance = parseFloat((physical - system).toFixed(2));
+      return variance !== 0;
     }).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [counts, items]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -165,18 +169,32 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
         <Label htmlFor="typeFilter" className="shrink-0">
           Filter by type:
         </Label>
-        <select
-          id="typeFilter"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as ItemTypeFilter)}
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        >
-          {itemTypeOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="typeFilter"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as ItemTypeFilter)}
+            className="flex h-9 appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {itemTypeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <svg
+            className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
         <span className="text-sm text-muted-foreground">
           {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""} shown
         </span>
