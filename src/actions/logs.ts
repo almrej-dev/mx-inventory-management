@@ -56,7 +56,8 @@ export async function getLatestLogDate(): Promise<string | null> {
 
 export async function getLogs(
   filter: LogFilter = "all",
-  date: string = todayIso()
+  from: string = todayIso(),
+  to: string = todayIso()
 ): Promise<{ logs: LogEntry[]; error?: string }> {
   try {
     await requireRole("admin");
@@ -64,13 +65,20 @@ export async function getLogs(
     return { logs: [], error: "Unauthorized" };
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(from) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(to)
+  ) {
     return { logs: [], error: "Invalid date" };
+  }
+  if (from > to) {
+    return { logs: [], error: "Start date must not be after end date" };
   }
 
   try {
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(start.getTime() + 86_400_000); // +1 UTC day
+    const start = new Date(`${from}T00:00:00.000Z`);
+    // end is the start of the day AFTER `to`, making `to` inclusive
+    const end = new Date(new Date(`${to}T00:00:00.000Z`).getTime() + 86_400_000);
 
     const dateWhere = { createdAt: { gte: start, lt: end } };
 

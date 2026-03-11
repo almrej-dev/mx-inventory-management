@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,8 @@ import { cn } from "@/lib/utils";
 interface LogsClientProps {
   initialLogs: LogEntry[];
   activeFilter: LogFilter;
-  activeDate: string; // "YYYY-MM-DD"
+  activeFrom: string; // "YYYY-MM-DD"
+  activeTo: string;   // "YYYY-MM-DD"
   today: string;      // "YYYY-MM-DD"
   noLogsEver?: boolean;
   error?: string;
@@ -84,22 +86,47 @@ function shiftDate(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function filterHref(date: string, filter: LogFilter): string {
-  if (filter === "all") return `/logs?date=${date}`;
-  return `/logs?date=${date}&filter=${filter}`;
+function rangeHref(from: string, to: string, filter: LogFilter): string {
+  const base = `/logs?from=${from}&to=${to}`;
+  if (filter === "all") return base;
+  return `${base}&filter=${filter}`;
 }
 
 export function LogsClient({
   initialLogs,
   activeFilter,
-  activeDate,
+  activeFrom,
+  activeTo,
   today,
   noLogsEver,
   error,
 }: LogsClientProps) {
-  const prevDate = shiftDate(activeDate, -1);
-  const nextDate = shiftDate(activeDate, +1);
-  const isToday = activeDate >= today;
+  const router = useRouter();
+
+  const prevFrom = shiftDate(activeFrom, -1);
+  const prevTo = shiftDate(activeTo, -1);
+  const nextFrom = shiftDate(activeFrom, +1);
+  const nextTo = shiftDate(activeTo, +1);
+  const isAtToday = activeTo >= today;
+
+  const isSingleDay = activeFrom === activeTo;
+  const dateLabel = isSingleDay
+    ? format(parseISO(activeFrom), "MMMM d, yyyy")
+    : `${format(parseISO(activeFrom), "MMM d, yyyy")} – ${format(parseISO(activeTo), "MMM d, yyyy")}`;
+
+  function handleFromChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newFrom = e.target.value;
+    // Clamp to: if newFrom > activeTo, collapse range to newFrom
+    const newTo = newFrom > activeTo ? newFrom : activeTo;
+    router.push(rangeHref(newFrom, newTo, activeFilter));
+  }
+
+  function handleToChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newTo = e.target.value;
+    // Clamp from: if newTo < activeFrom, collapse range to newTo
+    const newFrom = newTo < activeFrom ? newTo : activeFrom;
+    router.push(rangeHref(newFrom, newTo, activeFilter));
+  }
 
   if (noLogsEver) {
     return (
@@ -147,7 +174,7 @@ export function LogsClient({
       {/* Filter tabs */}
       <div className="flex gap-1 border-b">
         {FILTERS.map((f) => (
-          <Link key={f.value} href={filterHref(activeDate, f.value)}>
+          <Link key={f.value} href={rangeHref(activeFrom, activeTo, f.value)}>
             <Button
               variant="ghost"
               size="sm"
@@ -163,29 +190,40 @@ export function LogsClient({
         ))}
       </div>
 
-      {/* Date navigation */}
-      <div className="flex items-center justify-between">
-        <Link href={filterHref(prevDate, activeFilter)}>
+      {/* Date range navigation */}
+      <div className="flex items-center gap-3">
+        <Link href={rangeHref(prevFrom, prevTo, activeFilter)}>
           <Button variant="outline" size="sm">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Prev
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </Link>
 
-        <span className="text-sm font-medium">
-          {format(parseISO(activeDate), "MMMM d, yyyy")}
-        </span>
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <input
+            type="date"
+            value={activeFrom}
+            max={today}
+            onChange={handleFromChange}
+            className="rounded-md border bg-background px-2 py-1 text-sm"
+          />
+          <span className="text-sm text-muted-foreground">to</span>
+          <input
+            type="date"
+            value={activeTo}
+            max={today}
+            onChange={handleToChange}
+            className="rounded-md border bg-background px-2 py-1 text-sm"
+          />
+        </div>
 
-        {isToday ? (
+        {isAtToday ? (
           <Button variant="outline" size="sm" disabled>
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Link href={filterHref(nextDate, activeFilter)}>
+          <Link href={rangeHref(nextFrom, nextTo, activeFilter)}>
             <Button variant="outline" size="sm">
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </Link>
         )}
@@ -197,14 +235,14 @@ export function LogsClient({
           <CardTitle>Log Entries</CardTitle>
           <CardDescription>
             {initialLogs.length} entr{initialLogs.length !== 1 ? "ies" : "y"}{" "}
-            for {format(parseISO(activeDate), "MMMM d, yyyy")}
+            for {dateLabel}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Time</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Action</TableHead>
@@ -218,7 +256,7 @@ export function LogsClient({
                     colSpan={5}
                     className="py-12 text-center text-muted-foreground"
                   >
-                    No activity yet
+                    No activity for this period
                   </TableCell>
                 </TableRow>
               ) : (
@@ -228,8 +266,8 @@ export function LogsClient({
                   return (
                     <TableRow key={entry.id}>
                       <TableCell className="text-muted-foreground font-mono text-sm">
-                        {/* Displayed in browser local time; log entries are filtered by UTC day */}
-                        {format(new Date(entry.createdAt), "HH:mm:ss")}
+                        {/* Displayed in browser local time; log entries are filtered by UTC day boundaries */}
+                        {format(new Date(entry.createdAt), isSingleDay ? "HH:mm:ss" : "MMM d HH:mm")}
                       </TableCell>
                       <TableCell className="text-sm">{entry.userName}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
