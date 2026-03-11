@@ -9,7 +9,8 @@ import type { AppRole } from "@/types";
 import {
   LayoutDashboard,
   Package,
-  BookOpen,
+  Layers,
+  Package2,
   ClipboardList,
   History,
   Users,
@@ -58,13 +59,19 @@ const navigation: NavEntry[] = [
     roles: ["admin", "staff", "viewer"],
   },
   {
-    label: "Recipes",
+    label: "Products",
     roles: ["admin", "staff", "viewer"],
     items: [
       {
-        name: "All Recipes",
-        href: "/recipes",
-        icon: BookOpen,
+        name: "Semi-finished",
+        href: "/products/semi-finished",
+        icon: Layers,
+        roles: ["admin", "staff", "viewer"],
+      },
+      {
+        name: "Finished",
+        href: "/products/finished",
+        icon: Package2,
         roles: ["admin", "staff", "viewer"],
       },
     ],
