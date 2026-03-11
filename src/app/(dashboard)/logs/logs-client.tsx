@@ -27,9 +27,10 @@ import { cn } from "@/lib/utils";
 interface LogsClientProps {
   initialLogs: LogEntry[];
   activeFilter: LogFilter;
-  activeFrom: string; // "YYYY-MM-DD"
-  activeTo: string;   // "YYYY-MM-DD"
-  today: string;      // "YYYY-MM-DD"
+  activeFrom: string;    // "YYYY-MM-DD"
+  activeTo: string;      // "YYYY-MM-DD"
+  today: string;         // "YYYY-MM-DD"
+  earliestDate: string;  // "YYYY-MM-DD" — date of the very first log entry
   noLogsEver?: boolean;
   error?: string;
 }
@@ -98,6 +99,7 @@ export function LogsClient({
   activeFrom,
   activeTo,
   today,
+  earliestDate,
   noLogsEver,
   error,
 }: LogsClientProps) {
@@ -108,6 +110,7 @@ export function LogsClient({
   const nextFrom = shiftDate(activeFrom, +1);
   const nextTo = shiftDate(activeTo, +1);
   const isAtToday = activeTo >= today;
+  const isAtEarliest = activeFrom <= earliestDate;
 
   const isSingleDay = activeFrom === activeTo;
   const dateLabel = isSingleDay
@@ -192,16 +195,23 @@ export function LogsClient({
 
       {/* Date range navigation */}
       <div className="flex items-center gap-3">
-        <Link href={rangeHref(prevFrom, prevTo, activeFilter)}>
-          <Button variant="outline" size="sm">
+        {isAtEarliest ? (
+          <Button variant="outline" size="sm" disabled>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-        </Link>
+        ) : (
+          <Link href={rangeHref(prevFrom, prevTo, activeFilter)}>
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+        )}
 
         <div className="flex items-center gap-2 flex-1 justify-center">
           <input
             type="date"
             value={activeFrom}
+            min={earliestDate}
             max={today}
             onChange={handleFromChange}
             className="rounded-md border bg-background px-2 py-1 text-sm"
@@ -210,6 +220,7 @@ export function LogsClient({
           <input
             type="date"
             value={activeTo}
+            min={earliestDate}
             max={today}
             onChange={handleToChange}
             className="rounded-md border bg-background px-2 py-1 text-sm"

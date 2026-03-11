@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuth } from "@/lib/auth";
-import { getLogs, getLatestLogDate, type LogFilter } from "@/actions/logs";
+import { getLogs, getLogDateBounds, type LogFilter } from "@/actions/logs";
 import { LogsClient } from "./logs-client";
 
 export default async function LogsPage({
@@ -15,30 +15,28 @@ export default async function LogsPage({
   const filter = (rawFilter ?? "all") as LogFilter;
   const today = new Date().toISOString().slice(0, 10);
 
-  // When no range params, default to the most recent log date.
-  // If no logs exist at all, show the empty-system state.
-  let activeFrom: string;
-  let activeTo: string;
-  let noLogsEver = false;
+  const bounds = await getLogDateBounds();
 
-  if (rawFrom || rawTo) {
-    activeFrom = rawFrom ?? today;
-    activeTo = rawTo ?? today;
-  } else {
-    const latestDate = await getLatestLogDate();
-    if (latestDate === null) {
-      noLogsEver = true;
-      activeFrom = today;
-      activeTo = today;
-    } else {
-      activeFrom = latestDate;
-      activeTo = latestDate;
-    }
+  // No logs exist at all — show empty state
+  if (!bounds) {
+    return (
+      <LogsClient
+        initialLogs={[]}
+        activeFilter={filter}
+        activeFrom={today}
+        activeTo={today}
+        today={today}
+        earliestDate={today}
+        noLogsEver
+      />
+    );
   }
 
-  const { logs, error } = noLogsEver
-    ? { logs: [], error: undefined }
-    : await getLogs(filter, activeFrom, activeTo);
+  // When no range params, default to the most recent log date (single-day view)
+  const activeFrom = rawFrom ?? bounds.latest;
+  const activeTo = rawTo ?? bounds.latest;
+
+  const { logs, error } = await getLogs(filter, activeFrom, activeTo);
 
   return (
     <LogsClient
@@ -47,7 +45,7 @@ export default async function LogsPage({
       activeFrom={activeFrom}
       activeTo={activeTo}
       today={today}
-      noLogsEver={noLogsEver}
+      earliestDate={bounds.earliest}
       error={error}
     />
   );

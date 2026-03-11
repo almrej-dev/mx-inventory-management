@@ -20,10 +20,13 @@ function todayIso(): string {
 }
 
 /**
- * Returns the UTC date string ("YYYY-MM-DD") of the most recent log entry
+ * Returns the UTC date strings of the earliest and most recent log entries
  * across both AuditLog and InventoryTransaction, or null if no logs exist.
  */
-export async function getLatestLogDate(): Promise<string | null> {
+export async function getLogDateBounds(): Promise<{
+  earliest: string;
+  latest: string;
+} | null> {
   try {
     await requireRole("admin");
   } catch {
@@ -31,24 +34,40 @@ export async function getLatestLogDate(): Promise<string | null> {
   }
 
   try {
-    const [latestAudit, latestTx] = await Promise.all([
-      prisma.auditLog.findFirst({
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
-      }),
-      prisma.inventoryTransaction.findFirst({
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
-      }),
-    ]);
+    const [earliestAudit, latestAudit, earliestTx, latestTx] =
+      await Promise.all([
+        prisma.auditLog.findFirst({
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        }),
+        prisma.auditLog.findFirst({
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        }),
+        prisma.inventoryTransaction.findFirst({
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        }),
+        prisma.inventoryTransaction.findFirst({
+          orderBy: { createdAt: "desc" },
+          select: { createdAt: true },
+        }),
+      ]);
 
-    const dates = [latestAudit?.createdAt, latestTx?.createdAt].filter(
-      (d): d is Date => d != null
-    );
-    if (dates.length === 0) return null;
+    const allDates = [
+      earliestAudit?.createdAt,
+      latestAudit?.createdAt,
+      earliestTx?.createdAt,
+      latestTx?.createdAt,
+    ].filter((d): d is Date => d != null);
 
-    const latest = new Date(Math.max(...dates.map((d) => d.getTime())));
-    return latest.toISOString().slice(0, 10);
+    if (allDates.length === 0) return null;
+
+    const ms = allDates.map((d) => d.getTime());
+    return {
+      earliest: new Date(Math.min(...ms)).toISOString().slice(0, 10),
+      latest: new Date(Math.max(...ms)).toISOString().slice(0, 10),
+    };
   } catch {
     return null;
   }
