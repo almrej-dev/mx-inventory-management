@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,33 +8,32 @@ import {
   getPaginationRowModel,
   getFilteredRowModel,
   flexRender,
-  type SortingState,
-} from "@tanstack/react-table";
-import { getItemColumns } from "@/components/items/item-columns";
-import { deleteItem } from "@/actions/items";
-import { ITEM_TYPES } from "@/lib/constants";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+  type SortingState
+} from '@tanstack/react-table';
+import { getItemColumns } from '@/components/items/item-columns';
+import { deleteItem } from '@/actions/items';
+import { ITEM_TYPES } from '@/lib/constants';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+  DialogFooter
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { ItemWithDisplayValues } from "@/actions/items";
+  TableRow
+} from '@/components/ui/table';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import type { ItemWithDisplayValues } from '@/actions/items';
 
 interface ItemTableProps {
   data: ItemWithDisplayValues[];
@@ -43,9 +42,9 @@ interface ItemTableProps {
 export function ItemTable({ data }: ItemTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
 
   // Extract unique categories for filter dropdown
   const categories = useMemo(() => {
@@ -56,7 +55,10 @@ export function ItemTable({ data }: ItemTableProps) {
     return Array.from(cats).sort();
   }, [data]);
 
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteRequest = useCallback((id: number, name: string) => {
@@ -69,18 +71,29 @@ export function ItemTable({ data }: ItemTableProps) {
     try {
       const result = await deleteItem(deleteTarget.id);
       if (result.error) {
-        console.error("Delete failed:", result.error);
+        console.error('Delete failed:', result.error);
       }
       setDeleteTarget(null);
       router.refresh();
     } catch (err) {
-      console.error("Delete failed:", err);
+      console.error('Delete failed:', err);
     } finally {
       setIsDeleting(false);
     }
   }, [deleteTarget, router]);
 
-  const columns = useMemo(() => getItemColumns({ onDelete: handleDeleteRequest }), [handleDeleteRequest]);
+  const columns = useMemo(
+    () => getItemColumns({ onDelete: handleDeleteRequest }),
+    [handleDeleteRequest]
+  );
+
+  const columnFilters = useMemo(
+    () => [
+      ...(typeFilter !== 'ALL' ? [{ id: 'type', value: typeFilter }] : []),
+      ...(categoryFilter !== 'ALL' ? [{ id: 'category', value: categoryFilter }] : [])
+    ],
+    [typeFilter, categoryFilter]
+  );
 
   const table = useReactTable({
     data,
@@ -88,12 +101,7 @@ export function ItemTable({ data }: ItemTableProps) {
     state: {
       sorting,
       globalFilter,
-      columnFilters: [
-        ...(typeFilter !== "ALL" ? [{ id: "type", value: typeFilter }] : []),
-        ...(categoryFilter !== "ALL"
-          ? [{ id: "category", value: categoryFilter }]
-          : []),
-      ],
+      columnFilters
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -103,15 +111,14 @@ export function ItemTable({ data }: ItemTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
     globalFilterFn: (row, _columnId, filterValue: string) => {
       const search = filterValue.toLowerCase();
-      const name = (row.getValue("name") as string).toLowerCase();
-      const sku = (row.getValue("sku") as string).toLowerCase();
+      const name = (row.getValue('name') as string).toLowerCase();
+      const sku = (row.getValue('sku') as string).toLowerCase();
       return name.includes(search) || sku.includes(search);
     },
     initialState: {
-      pagination: { pageSize: 10 },
-    },
+      pagination: { pageSize: 10 }
+    }
   });
-
 
   const filteredRowCount = table.getFilteredRowModel().rows.length;
 
@@ -211,11 +218,34 @@ export function ItemTable({ data }: ItemTableProps) {
         </Table>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Item</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={isDeleting} onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Pagination */}
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows per page:</span>
+            <span className="text-sm text-muted-foreground">
+              Rows per page:
+            </span>
             <select
               value={table.getState().pagination.pageSize}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
@@ -231,7 +261,7 @@ export function ItemTable({ data }: ItemTableProps) {
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              Page {table.getState().pagination.pageIndex + 1} of{' '}
               {table.getPageCount()}
             </span>
             <Button
@@ -253,25 +283,6 @@ export function ItemTable({ data }: ItemTableProps) {
           </div>
         </div>
       )}
-
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Delete Item</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete &ldquo;{deleteTarget?.name}&rdquo;? This will permanently remove the item and all its related transactions, recipes, and sales data.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" disabled={isDeleting} />}>
-              Cancel
-            </DialogClose>
-            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
