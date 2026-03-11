@@ -144,6 +144,9 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
 
   const { ingredients } = parsed.data;
 
+  // Note: circular-reference and child-item type checks run outside the transaction.
+  // A concurrent request could modify a child item between these checks and the write.
+  // This is a known pre-existing limitation; fixing it is out of scope for this task.
   // Check circular references
   for (const ing of ingredients) {
     const isCircular = await checkCircularReference(parentItemId, ing.childItemId);
@@ -242,6 +245,8 @@ export async function deleteProduct(parentItemId: number) {
   }
 
   try {
+    // Deletes only the recipe ingredients (product definition).
+    // The parent Item row is intentionally left intact per design.
     const snapshot = await prisma.item.findUnique({
       where: { id: parentItemId },
       select: { name: true, sku: true },
