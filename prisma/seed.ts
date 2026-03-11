@@ -27,9 +27,63 @@ async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123456";
 
-  console.log(`Creating admin user: ${adminEmail}`);
+  console.log("=== Database Reset ===\n");
 
-  // 1. Create auth user via Supabase Admin API
+  // 1. Delete all data (order respects foreign keys)
+  console.log("Clearing all data...");
+
+  const salesLines = await prisma.salesLine.deleteMany();
+  console.log(`  Deleted ${salesLines.count} sales lines`);
+
+  const salesUploads = await prisma.salesUpload.deleteMany();
+  console.log(`  Deleted ${salesUploads.count} sales uploads`);
+
+  const transactions = await prisma.inventoryTransaction.deleteMany();
+  console.log(`  Deleted ${transactions.count} inventory transactions`);
+
+  const recipes = await prisma.recipeIngredient.deleteMany();
+  console.log(`  Deleted ${recipes.count} recipe ingredients`);
+
+  const items = await prisma.item.deleteMany();
+  console.log(`  Deleted ${items.count} items`);
+
+  // 2. Delete all non-admin Supabase auth users
+  console.log("\nCleaning up auth users...");
+
+  const { data: listData, error: listError } =
+    await supabase.auth.admin.listUsers({ perPage: 1000 });
+
+  if (listError) {
+    console.error(`  Warning: Could not list auth users: ${listError.message}`);
+  } else {
+    const nonAdminUsers = listData.users.filter(
+      (u) => u.email !== adminEmail
+    );
+
+    for (const user of nonAdminUsers) {
+      // Delete profile first
+      await prisma.profile.delete({ where: { id: user.id } }).catch(() => {});
+
+      // Delete user_roles via Supabase
+      await supabase.from("user_roles").delete().eq("user_id", user.id);
+
+      // Delete auth user
+      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      if (error) {
+        console.error(`  Warning: Could not delete user ${user.email}: ${error.message}`);
+      } else {
+        console.log(`  Deleted user: ${user.email}`);
+      }
+    }
+
+    if (nonAdminUsers.length === 0) {
+      console.log("  No non-admin users to delete.");
+    }
+  }
+
+  // 3. Ensure admin account exists
+  console.log(`\nEnsuring admin account: ${adminEmail}`);
+
   const { data: authData, error: authError } =
     await supabase.auth.admin.createUser({
       email: adminEmail,
@@ -37,46 +91,48 @@ async function main() {
       email_confirm: true,
     });
 
+  let adminId: string;
+
   if (authError) {
-    // If user already exists, that's okay
     if (authError.message.includes("already been registered")) {
-      console.log("Admin user already exists, skipping creation.");
-      return;
+      console.log("  Admin auth user already exists.");
+      const existing = listData?.users.find((u) => u.email === adminEmail);
+      if (!existing) {
+        throw new Error("Admin user exists in auth but could not find ID");
+      }
+      adminId = existing.id;
+    } else {
+      throw new Error(`Failed to create admin user: ${authError.message}`);
     }
-    throw new Error(`Failed to create admin user: ${authError.message}`);
+  } else {
+    adminId = authData.user.id;
+    console.log(`  Admin auth user created with ID: ${adminId}`);
   }
 
-  const userId = authData.user.id;
-  console.log(`Admin user created with ID: ${userId}`);
-
-  // 2. Insert user_roles record (user_roles table is managed by Supabase SQL, not Prisma)
+  // 4. Ensure admin role
+  await supabase.from("user_roles").delete().eq("user_id", adminId);
   const { error: insertRoleError } = await supabase
     .from("user_roles")
-    .insert({ user_id: userId, role: "admin" });
+    .insert({ user_id: adminId, role: "admin" });
 
   if (insertRoleError) {
-    console.error(
-      `Warning: Failed to insert user_roles record: ${insertRoleError.message}`
-    );
-    console.log(
-      "You may need to run the RBAC SQL migration first and then re-run the seed."
-    );
+    console.error(`  Warning: Could not insert admin role: ${insertRoleError.message}`);
   } else {
-    console.log("Admin role assigned.");
+    console.log("  Admin role ensured.");
   }
 
-  // 3. Create Profile record via Prisma
+  // 5. Ensure admin profile
   await prisma.profile.upsert({
-    where: { id: userId },
+    where: { id: adminId },
     update: {},
     create: {
-      id: userId,
+      id: adminId,
       fullName: "System Admin",
     },
   });
+  console.log("  Admin profile ensured.");
 
-  console.log("Admin profile created.");
-  console.log("\nSeed completed successfully!");
+  console.log("\n=== Reset complete ===");
   console.log(`  Email: ${adminEmail}`);
   console.log(`  Password: ${adminPassword}`);
 }
