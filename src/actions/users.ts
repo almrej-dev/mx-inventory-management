@@ -3,7 +3,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { userSchema } from "@/schemas/user";
+import { userSchema, editUserSchema } from "@/schemas/user";
 
 function createServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -94,27 +94,22 @@ export async function listUsers(): Promise<{
   try {
     const supabase = createServiceRoleClient();
 
-    // Get all auth users
-    const {
-      data: { users: authUsers },
-      error: authError,
-    } = await supabase.auth.admin.listUsers();
+    const [
+      { data: { users: authUsers }, error: authError },
+      { data: roles, error: rolesError },
+      profiles,
+    ] = await Promise.all([
+      supabase.auth.admin.listUsers(),
+      supabase.from("user_roles").select("user_id, role"),
+      prisma.profile.findMany(),
+    ]);
 
     if (authError) {
       return { error: authError.message };
     }
-
-    // Get all user roles
-    const { data: roles, error: rolesError } = await supabase
-      .from("user_roles")
-      .select("user_id, role");
-
     if (rolesError) {
       return { error: rolesError.message };
     }
-
-    // Get all profiles
-    const profiles = await prisma.profile.findMany();
 
     // Build role map
     const roleMap = new Map<string, string>();
@@ -142,6 +137,45 @@ export async function listUsers(): Promise<{
       error: err instanceof Error ? err.message : "Failed to list users",
     };
   }
+}
+
+export async function updateUser(
+  userId: string,
+  rawData: unknown
+): Promise<{ success?: boolean; error?: string }> {
+  await requireRole("admin");
+
+  const parsed = editUserSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: "Validation failed. Please check your input." };
+  }
+
+  const { fullName, role, password } = parsed.data;
+  const supabase = createServiceRoleClient();
+
+  const { error: roleError } = await supabase
+    .from("user_roles")
+    .update({ role })
+    .eq("user_id", userId);
+
+  if (roleError) {
+    return { error: roleError.message };
+  }
+
+  if (password) {
+    const { error: pwError } = await supabase.auth.admin.updateUserById(userId, { password });
+    if (pwError) {
+      return { error: pwError.message };
+    }
+  }
+
+  await prisma.profile.upsert({
+    where: { id: userId },
+    update: { fullName },
+    create: { id: userId, fullName },
+  });
+
+  return { success: true };
 }
 
 export async function deleteUser(

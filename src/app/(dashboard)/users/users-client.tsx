@@ -29,15 +29,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
 interface UsersClientProps {
   initialUsers: UserListItem[];
+  currentUserId: string;
   error?: string;
 }
 
-export function UsersClient({ initialUsers, error }: UsersClientProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+export function UsersClient({ initialUsers, currentUserId, error }: UsersClientProps) {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
 
@@ -55,7 +57,12 @@ export function UsersClient({ initialUsers, error }: UsersClientProps) {
   }
 
   function handleUserCreated() {
-    setDialogOpen(false);
+    setCreateDialogOpen(false);
+    router.refresh();
+  }
+
+  function handleUserUpdated() {
+    setEditingUser(null);
     router.refresh();
   }
 
@@ -83,10 +90,8 @@ export function UsersClient({ initialUsers, error }: UsersClientProps) {
             Manage user accounts and role assignments
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger
-            render={<Button />}
-          >
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger render={<Button />}>
             <Plus className="mr-2 h-4 w-4" />
             Add User
           </DialogTrigger>
@@ -117,7 +122,7 @@ export function UsersClient({ initialUsers, error }: UsersClientProps) {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,14 +148,25 @@ export function UsersClient({ initialUsers, error }: UsersClientProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(user.id)}
-                        disabled={deleting === user.id}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingUser(user)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {user.id !== currentUserId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(user.id)}
+                            disabled={deleting === user.id}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -159,6 +175,25 @@ export function UsersClient({ initialUsers, error }: UsersClientProps) {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open) setEditingUser(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update the user&apos;s name and role.
+            </DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <UserForm
+              mode="edit"
+              userId={editingUser.id}
+              initialData={{ fullName: editingUser.fullName, role: editingUser.role }}
+              onSuccess={handleUserUpdated}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
