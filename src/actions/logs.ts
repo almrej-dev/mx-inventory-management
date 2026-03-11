@@ -19,6 +19,41 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
+/**
+ * Returns the UTC date string ("YYYY-MM-DD") of the most recent log entry
+ * across both AuditLog and InventoryTransaction, or null if no logs exist.
+ */
+export async function getLatestLogDate(): Promise<string | null> {
+  try {
+    await requireRole("admin");
+  } catch {
+    return null;
+  }
+
+  try {
+    const [latestAudit, latestTx] = await Promise.all([
+      prisma.auditLog.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+      prisma.inventoryTransaction.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    const dates = [latestAudit?.createdAt, latestTx?.createdAt].filter(
+      (d): d is Date => d != null
+    );
+    if (dates.length === 0) return null;
+
+    const latest = new Date(Math.max(...dates.map((d) => d.getTime())));
+    return latest.toISOString().slice(0, 10);
+  } catch {
+    return null;
+  }
+}
+
 export async function getLogs(
   filter: LogFilter = "all",
   date: string = todayIso()

@@ -28,6 +28,7 @@ interface LogsClientProps {
   activeFilter: LogFilter;
   activeDate: string; // "YYYY-MM-DD"
   today: string;      // "YYYY-MM-DD"
+  noLogsEver?: boolean;
   error?: string;
 }
 
@@ -93,11 +94,33 @@ export function LogsClient({
   activeFilter,
   activeDate,
   today,
+  noLogsEver,
   error,
 }: LogsClientProps) {
   const prevDate = shiftDate(activeDate, -1);
   const nextDate = shiftDate(activeDate, +1);
   const isToday = activeDate >= today;
+
+  if (noLogsEver) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Activity Logs</h1>
+          <p className="text-muted-foreground">
+            All system activity — items, products, and stock movements
+          </p>
+        </div>
+        <Card>
+          <CardContent className="py-16 text-center">
+            <p className="text-muted-foreground">No logs to show yet.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Activity will appear here once items, products, or stock movements are recorded.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (error) {
     return (
