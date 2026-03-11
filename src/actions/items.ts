@@ -7,8 +7,10 @@ import { gramsToMg, pesosToCentavos, mgToGrams, centavosToPesos } from "@/lib/ut
 import { revalidatePath } from "next/cache";
 
 export async function createItem(rawData: unknown) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
   } catch {
     return { error: { _form: ["Unauthorized"] } };
   }
@@ -39,7 +41,23 @@ export async function createItem(rawData: unknown) {
       },
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "ITEM",
+          entityId: item.id,
+          entityName: item.name,
+          entitySku: item.sku,
+          action: "CREATE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
+
     revalidatePath("/items");
+    revalidatePath("/logs");
     return { success: true, item };
   } catch (err) {
     if (
@@ -59,8 +77,10 @@ export async function createItem(rawData: unknown) {
 }
 
 export async function updateItem(id: number, rawData: unknown) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
   } catch {
     return { error: { _form: ["Unauthorized"] } };
   }
@@ -92,7 +112,23 @@ export async function updateItem(id: number, rawData: unknown) {
       },
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "ITEM",
+          entityId: item.id,
+          entityName: item.name,
+          entitySku: item.sku,
+          action: "UPDATE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
+
     revalidatePath("/items");
+    revalidatePath("/logs");
     return { success: true, item };
   } catch (err) {
     if (
@@ -112,14 +148,42 @@ export async function updateItem(id: number, rawData: unknown) {
 }
 
 export async function deleteItem(id: number) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
+  } catch {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const existing = await prisma.item.findUnique({
+      where: { id },
+      select: { name: true, sku: true },
+    });
+    if (!existing) return { error: "Item not found" };
 
     await prisma.item.delete({
       where: { id },
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "ITEM",
+          entityId: id,
+          entityName: existing.name,
+          entitySku: existing.sku,
+          action: "DELETE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
+
     revalidatePath("/items");
+    revalidatePath("/logs");
     return { success: true };
   } catch (err) {
     return {
