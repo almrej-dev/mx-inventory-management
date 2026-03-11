@@ -13,7 +13,7 @@ export default async function LogsPage({
 
   const { filter: rawFilter, from: rawFrom, to: rawTo } = await searchParams;
   const filter = (rawFilter ?? "all") as LogFilter;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Manila" }).slice(0, 10);
 
   const bounds = await getLogDateBounds();
 

@@ -1,9 +1,11 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -93,6 +95,35 @@ function rangeHref(from: string, to: string, filter: LogFilter): string {
   return `${base}&filter=${filter}`;
 }
 
+function DetailsPanel({ changes }: { changes: Record<string, unknown> }) {
+  const entries = Object.entries(changes);
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-x-6 gap-y-1 px-2 py-2 text-xs text-muted-foreground">
+      {entries.map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return (
+            <div key={key} className="w-full">
+              <span className="font-medium text-foreground">{key}:</span>{" "}
+              <ul className="mt-0.5 list-none space-y-0.5 pl-2">
+                {(value as string[]).map((v, i) => (
+                  <li key={i}>{v}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        }
+        return (
+          <div key={key}>
+            <span className="font-medium text-foreground">{key}:</span>{" "}
+            {String(value)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function LogsClient({
   initialLogs,
   activeFilter,
@@ -104,6 +135,16 @@ export function LogsClient({
   error,
 }: LogsClientProps) {
   const router = useRouter();
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  function toggleRow(id: string) {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const prevFrom = shiftDate(activeFrom, -1);
   const prevTo = shiftDate(activeTo, -1);
@@ -258,13 +299,14 @@ export function LogsClient({
                 <TableHead>Category</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Name / SKU</TableHead>
+                <TableHead className="w-6" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {initialLogs.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="py-12 text-center text-muted-foreground"
                   >
                     No activity for this period
@@ -274,31 +316,56 @@ export function LogsClient({
                 initialLogs.map((entry) => {
                   const style =
                     ACTION_STYLES[entry.action] ?? UNKNOWN_ACTION_STYLE;
+                  const hasDetails =
+                    entry.changes && Object.keys(entry.changes).length > 0;
+                  const isExpanded = expandedRows.has(entry.id);
                   return (
-                    <TableRow key={entry.id}>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
-                        {/* Displayed in browser local time; log entries are filtered by UTC day boundaries */}
-                        {format(new Date(entry.createdAt), isSingleDay ? "HH:mm:ss" : "MMM d HH:mm")}
-                      </TableCell>
-                      <TableCell className="text-sm">{entry.userName}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {ENTITY_LABELS[entry.entityType] ?? entry.entityType}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={style.className}
-                        >
-                          {style.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{entry.entityName}</span>
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {entry.entitySku}
-                        </span>
-                      </TableCell>
-                    </TableRow>
+                    <React.Fragment key={entry.id}>
+                      <TableRow
+                        onClick={() => hasDetails && toggleRow(entry.id)}
+                        className={hasDetails ? "cursor-pointer" : undefined}
+                      >
+                        <TableCell className="text-muted-foreground font-mono text-sm">
+                          {/* Displayed in browser local time; log entries are filtered by UTC day boundaries */}
+                          {format(new Date(entry.createdAt), isSingleDay ? "HH:mm:ss" : "MMM d HH:mm")}
+                        </TableCell>
+                        <TableCell className="text-sm">{entry.userName}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {ENTITY_LABELS[entry.entityType] ?? entry.entityType}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={style.className}
+                          >
+                            {style.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">{entry.entityName}</span>
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {entry.entitySku}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {hasDetails && (
+                            <ChevronDown
+                              className={cn(
+                                "h-4 w-4 transition-transform",
+                                isExpanded && "rotate-180"
+                              )}
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && hasDetails && (
+                        <TableRow key={`${entry.id}-details`} className="bg-muted/30 hover:bg-muted/30">
+                          <TableCell colSpan={6} className="py-0">
+                            <DetailsPanel changes={entry.changes!} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
