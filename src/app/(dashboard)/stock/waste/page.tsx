@@ -3,7 +3,6 @@ import { WasteForm } from "@/components/stock/waste-form";
 
 export default async function WastePage() {
   const items = await prisma.item.findMany({
-    where: { deletedAt: null },
     select: {
       id: true,
       name: true,

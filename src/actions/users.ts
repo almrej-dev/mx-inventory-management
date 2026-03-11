@@ -152,7 +152,10 @@ export async function deleteUser(
   try {
     const supabase = createServiceRoleClient();
 
-    // Delete auth user (cascading delete handles user_roles)
+    // Delete user_roles record first (no longer relies on FK cascade)
+    await supabase.from("user_roles").delete().eq("user_id", userId);
+
+    // Delete auth user
     const { error: authError } =
       await supabase.auth.admin.deleteUser(userId);
 

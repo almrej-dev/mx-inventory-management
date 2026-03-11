@@ -36,7 +36,7 @@ export async function receiveStock(rawData: unknown) {
       where: { id: data.itemId },
     });
 
-    if (!item || item.deletedAt !== null) {
+    if (!item) {
       return { error: "Item not found" };
     }
 
@@ -119,7 +119,7 @@ export async function recordWaste(rawData: unknown) {
       where: { id: data.itemId },
     });
 
-    if (!item || item.deletedAt !== null) {
+    if (!item) {
       return { error: "Item not found" };
     }
 
@@ -250,7 +250,6 @@ export async function getActiveItems() {
 
   try {
     const items = await prisma.item.findMany({
-      where: { deletedAt: null },
       select: {
         id: true,
         name: true,
@@ -282,7 +281,6 @@ export async function getItemsForReconciliation() {
 
   try {
     const items = await prisma.item.findMany({
-      where: { deletedAt: null },
       select: {
         id: true,
         name: true,

@@ -49,7 +49,6 @@ export async function getDashboardSummary() {
   await requireRole("viewer");
 
   const items = await prisma.item.findMany({
-    where: { deletedAt: null },
     select: {
       id: true,
       stockQty: true,
@@ -128,7 +127,6 @@ export async function getLowStockItems() {
 
   const items = await prisma.item.findMany({
     where: {
-      deletedAt: null,
       minStockQty: { gt: 0 },
     },
     select: {
@@ -154,7 +152,6 @@ export async function getReorderRecommendations() {
 
   const items = await prisma.item.findMany({
     where: {
-      deletedAt: null,
       minStockQty: { gt: 0 },
     },
     select: {
@@ -306,7 +303,6 @@ export async function getInventoryByCategory() {
   await requireRole("viewer");
 
   const items = await prisma.item.findMany({
-    where: { deletedAt: null },
     select: {
       category: true,
       type: true,

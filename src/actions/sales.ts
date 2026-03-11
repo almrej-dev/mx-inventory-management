@@ -230,7 +230,6 @@ export async function getFinishedItems() {
     const items = await prisma.item.findMany({
       where: {
         type: "FINISHED",
-        deletedAt: null,
         recipeIngredients: {
           some: {},
         },

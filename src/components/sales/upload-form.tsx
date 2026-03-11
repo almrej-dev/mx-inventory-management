@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { suggestMapping, type ColumnMapping } from "@/lib/sales-parser";
 import { ColumnMapper } from "@/components/sales/column-mapper";

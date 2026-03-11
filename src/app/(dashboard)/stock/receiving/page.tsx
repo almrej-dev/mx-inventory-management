@@ -4,7 +4,6 @@ import { ReceivingForm } from "@/components/stock/receiving-form";
 export default async function StockReceivingPage() {
   // Load active items for the item selector
   const items = await prisma.item.findMany({
-    where: { deletedAt: null },
     select: {
       id: true,
       name: true,

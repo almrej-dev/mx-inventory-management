@@ -53,23 +53,11 @@ const roleHierarchy: Record<AppRole, number> = {
 };
 
 export async function requireRole(minimumRole: AppRole) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const { user, userRole } = await getAuth();
 
-  if (error || !user) {
+  if (!user) {
     throw new Error("Unauthorized: Not authenticated");
   }
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error("Unauthorized: No session");
-
-  const jwt = jwtDecode<JwtPayload>(session.access_token);
-  const userRole = jwt.user_role || "viewer";
 
   if (roleHierarchy[userRole] < roleHierarchy[minimumRole]) {
     throw new Error(`Unauthorized: Requires ${minimumRole} role`);

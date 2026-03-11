@@ -33,13 +33,13 @@ export async function getReportFilterOptions() {
   await requireRole("viewer");
 
   const products = await prisma.item.findMany({
-    where: { type: "FINISHED", deletedAt: null },
+    where: { type: "FINISHED" },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 
   const categoryResults = await prisma.item.findMany({
-    where: { deletedAt: null, category: { not: null } },
+    where: { category: { not: null } },
     select: { category: true },
     distinct: ["category"],
     orderBy: { category: "asc" },

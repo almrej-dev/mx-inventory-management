@@ -1,14 +1,12 @@
 export const ITEM_TYPES = [
-  { value: "RAW_MATERIAL" as const, label: "Raw Material" },
-  { value: "SEMI_FINISHED" as const, label: "Semi-Finished" },
-  { value: "FINISHED" as const, label: "Finished" },
-  { value: "PACKAGING" as const, label: "Packaging" },
+  { value: 'RAW_MATERIAL' as const, label: 'Raw Material' },
+  { value: 'PACKAGING' as const, label: 'Packaging' }
 ];
 
 export const APP_ROLES = [
-  { value: "admin" as const, label: "Admin" },
-  { value: "staff" as const, label: "Staff" },
-  { value: "viewer" as const, label: "Viewer" },
+  { value: 'admin' as const, label: 'Admin' },
+  { value: 'staff' as const, label: 'Staff' },
+  { value: 'viewer' as const, label: 'Viewer' }
 ];
 
 /**
@@ -39,12 +37,12 @@ export const APP_ROLES = [
  *   PK-CP-001 = Packaging, Cups, #001 (e.g., 16oz Cup)
  */
 export const WASTE_REASON_CODES = [
-  { value: "EXPIRED", label: "Expired" },
-  { value: "SPOILED", label: "Spoiled / Contaminated" },
-  { value: "DAMAGED", label: "Damaged" },
-  { value: "QUALITY", label: "Quality Issue" },
-  { value: "SPILL", label: "Spilled / Dropped" },
-  { value: "OTHER", label: "Other" },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'SPOILED', label: 'Spoiled / Contaminated' },
+  { value: 'DAMAGED', label: 'Damaged' },
+  { value: 'QUALITY', label: 'Quality Issue' },
+  { value: 'SPILL', label: 'Spilled / Dropped' },
+  { value: 'OTHER', label: 'Other' }
 ] as const;
 
 export const SKU_FORMAT_GUIDE = `Format: {TYPE}-{CATEGORY}-{SEQ}
