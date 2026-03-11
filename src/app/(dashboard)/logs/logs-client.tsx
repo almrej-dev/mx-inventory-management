@@ -38,6 +38,8 @@ const FILTERS: { label: string; value: LogFilter }[] = [
   { label: "Stocks", value: "stocks" },
 ];
 
+const UNKNOWN_ACTION_STYLE = { label: "Unknown", className: "bg-muted text-muted-foreground" };
+
 const ACTION_STYLES: Record<string, { label: string; className: string }> = {
   CREATE: {
     label: "Create",
@@ -199,10 +201,11 @@ export function LogsClient({
               ) : (
                 initialLogs.map((entry) => {
                   const style =
-                    ACTION_STYLES[entry.action] ?? ACTION_STYLES.ADJUSTMENT;
+                    ACTION_STYLES[entry.action] ?? UNKNOWN_ACTION_STYLE;
                   return (
                     <TableRow key={entry.id}>
                       <TableCell className="text-muted-foreground font-mono text-sm">
+                        {/* Displayed in browser local time; log entries are filtered by UTC day */}
                         {format(new Date(entry.createdAt), "HH:mm:ss")}
                       </TableCell>
                       <TableCell className="text-sm">{entry.userName}</TableCell>
