@@ -15,8 +15,10 @@ export async function createProduct(
   sku: string,
   rawData: unknown
 ) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
   } catch {
     return { error: { _form: ["Unauthorized"] } };
   }
@@ -89,8 +91,24 @@ export async function createProduct(
       return item;
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "PRODUCT",
+          entityId: result.id,
+          entityName: result.name,
+          entitySku: result.sku,
+          action: "CREATE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
+
     revalidatePath("/products/semi-finished");
     revalidatePath("/products/finished");
+    revalidatePath("/logs");
     return { success: true, productId: result.id, productType };
   } catch (err) {
     return {
@@ -102,8 +120,10 @@ export async function createProduct(
 }
 
 export async function updateProduct(parentItemId: number, rawData: unknown) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
   } catch {
     return { error: { _form: ["Unauthorized"] } };
   }
@@ -158,7 +178,13 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const snapshot = await prisma.$transaction(async (tx) => {
+      const item = await tx.item.findUnique({
+        where: { id: parentItemId },
+        select: { name: true, sku: true },
+      });
+      if (!item) throw new Error("Product item not found");
+
       await tx.recipeIngredient.deleteMany({
         where: { parentItemId },
       });
@@ -171,11 +197,29 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
           quantityPieces: ing.quantityPieces,
         })),
       });
+
+      return item;
     });
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "PRODUCT",
+          entityId: parentItemId,
+          entityName: snapshot.name,
+          entitySku: snapshot.sku,
+          action: "UPDATE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
 
     revalidatePath(`/products/${parentItemId}`);
     revalidatePath("/products/semi-finished");
     revalidatePath("/products/finished");
+    revalidatePath("/logs");
     return { success: true };
   } catch (err) {
     return {
@@ -189,19 +233,43 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
 }
 
 export async function deleteProduct(parentItemId: number) {
+  let authUser: { id: string };
   try {
-    await requireRole("staff");
+    const { user } = await requireRole("staff");
+    authUser = user;
   } catch {
     return { error: "Unauthorized" };
   }
 
   try {
+    const snapshot = await prisma.item.findUnique({
+      where: { id: parentItemId },
+      select: { name: true, sku: true },
+    });
+    if (!snapshot) return { success: true }; // nothing to log; treat as idempotent
+
     await prisma.recipeIngredient.deleteMany({
       where: { parentItemId },
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          entityType: "PRODUCT",
+          entityId: parentItemId,
+          entityName: snapshot.name,
+          entitySku: snapshot.sku,
+          action: "DELETE",
+          createdBy: authUser.id,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log write failed:", auditErr);
+    }
+
     revalidatePath("/products/semi-finished");
     revalidatePath("/products/finished");
+    revalidatePath("/logs");
     return { success: true };
   } catch (err) {
     return {
