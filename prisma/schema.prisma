@@ -144,3 +144,32 @@ model UserRole {
   @@id([userId, role])
   @@map("user_roles")
 }
+
+enum AuditEntityType {
+  ITEM
+  PRODUCT
+
+  @@map("audit_entity_type")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+
+  @@map("audit_action")
+}
+
+model AuditLog {
+  id         Int             @id @default(autoincrement())
+  entityType AuditEntityType @map("entity_type")
+  entityId   Int             @map("entity_id")
+  entityName String          @map("entity_name")
+  entitySku  String          @map("entity_sku")
+  action     AuditAction
+  createdBy  String          @map("created_by")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([entityType, createdAt])
+  @@map("audit_logs")
+}
