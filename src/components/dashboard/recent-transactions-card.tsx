@@ -66,10 +66,10 @@ export function RecentTransactionsCard({
         </CardTitle>
         <CardAction>
           <Link
-            href="/stock/history"
+            href="/logs"
             className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            History
+            Logs
             <ChevronRight className="h-3 w-3" />
           </Link>
         </CardAction>
