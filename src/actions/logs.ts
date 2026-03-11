@@ -7,7 +7,7 @@ export type LogFilter = "all" | "items" | "products" | "stocks";
 
 export type LogEntry = {
   id: string; // "audit-{n}" | "tx-{n}" — prefixed to avoid collisions
-  entityType: "ITEM" | "PRODUCT" | "STOCK";
+  entityType: "ITEM" | "PRODUCT" | "STOCK"; // STOCK only appears for InventoryTransaction (tx-*) entries
   entityName: string;
   entitySku: string;
   action: string; // CREATE | UPDATE | DELETE | RECEIVE | WASTE | ADJUSTMENT | SALE_DEDUCTION
@@ -29,10 +29,13 @@ export async function getLogs(
     return { logs: [], error: "Unauthorized" };
   }
 
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { logs: [], error: "Invalid date" };
+  }
+
   try {
     const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(`${date}T00:00:00.000Z`);
-    end.setUTCDate(end.getUTCDate() + 1);
+    const end = new Date(start.getTime() + 86_400_000); // +1 UTC day
 
     const dateWhere = { createdAt: { gte: start, lt: end } };
 
