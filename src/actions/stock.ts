@@ -81,6 +81,7 @@ export async function receiveStock(rawData: unknown) {
 
     revalidatePath("/stock/receiving");
     revalidatePath("/items");
+    revalidatePath("/logs");
 
     return { success: true };
   } catch (err) {
@@ -156,9 +157,9 @@ export async function recordWaste(rawData: unknown) {
     ]);
 
     revalidatePath("/stock/waste");
-    revalidatePath("/stock/history");
     revalidatePath("/items");
     revalidatePath("/");
+    revalidatePath("/logs");
 
     return { success: true };
   } catch (err) {
@@ -393,9 +394,9 @@ export async function submitReconciliation(rawData: unknown) {
     await prisma.$transaction(ops);
 
     revalidatePath("/stock/reconciliation");
-    revalidatePath("/stock/history");
     revalidatePath("/items");
     revalidatePath("/");
+    revalidatePath("/logs");
 
     return {
       success: true,

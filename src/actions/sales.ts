@@ -140,8 +140,8 @@ export async function processSalesLines(rawData: unknown) {
     });
 
     revalidatePath("/sales");
-    revalidatePath("/stock/history");
     revalidatePath("/items");
+    revalidatePath("/logs");
 
     return { success: true, uploadId: result.id };
   } catch (err) {
