@@ -14,7 +14,8 @@
     "db:pull": "pnpm prisma db pull --config prisma.config.ts",
     "db:seed": "pnpm prisma db seed --config prisma.config.ts",
     "db:generate": "pnpm prisma generate --config prisma.config.ts",
-    "db:studio": "pnpm prisma studio --config prisma.config.ts"
+    "db:studio": "pnpm prisma studio --config prisma.config.ts",
+    "postinstall": "pnpm prisma generate --config prisma.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
