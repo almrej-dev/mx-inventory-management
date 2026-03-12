@@ -7,8 +7,7 @@ import { getAuth } from '@/lib/auth';
 import { Plus } from 'lucide-react';
 
 export default async function SemiFinishedProductsPage() {
-  const { userRole } = await getAuth();
-  const result = await getProducts('SEMI_FINISHED');
+  const [{ userRole }, result] = await Promise.all([getAuth(), getProducts('SEMI_FINISHED')]);
 
   if (result.error) {
     return (

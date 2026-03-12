@@ -16,9 +16,9 @@ import { revalidatePath } from "next/cache";
  * stock_qty is a denormalized cache of the ledger total -- it MUST only
  * change inside a transaction that also writes a ledger row.
  *
- * Unit interpretation depends on item.type:
- *   - PACKAGING: stock_qty is in pieces (quantityCartons * cartonSize)
- *   - All other types: stock_qty is in milligrams (quantityCartons * cartonSize * unitWeightMg)
+ * Unit interpretation depends on item.unitType:
+ *   - pcs: stock_qty is in pieces (quantityCartons * cartonSize)
+ *   - grams: stock_qty is in milligrams (quantityCartons * cartonSize * unitWeightMg)
  */
 export async function receiveStock(rawData: unknown) {
   const { user } = await requireRole("staff");
@@ -41,10 +41,10 @@ export async function receiveStock(rawData: unknown) {
     }
 
     // Calculate quantity in storage units
-    // PACKAGING: pieces = cartons * cartonSize
-    // All others: milligrams = cartons * cartonSize * unitWeightMg
+    // pcs items: pieces = cartons * cartonSize
+    // grams items: milligrams = cartons * cartonSize * unitWeightMg
     let calculatedQty: number;
-    if (item.type === "PACKAGING") {
+    if (item.unitType === "pcs") {
       calculatedQty = data.quantityCartons * item.cartonSize;
     } else {
       calculatedQty = data.quantityCartons * item.cartonSize * item.unitWeightMg;
@@ -98,9 +98,9 @@ export async function receiveStock(rawData: unknown) {
  *   1. Create an inventory_transactions ledger entry (WASTE) with negative quantity
  *   2. Decrement the item's stock_qty
  *
- * Unit interpretation depends on item.type:
- *   - PACKAGING: user enters in pieces (stock_qty is pieces)
- *   - All other types: user enters in grams; server converts to milligrams
+ * Unit interpretation depends on item.unitType:
+ *   - pcs: user enters in pieces (stock_qty is pieces)
+ *   - grams: user enters in grams; server converts to milligrams
  *
  * CRITICAL: The ledger quantity MUST be negative (waste removes stock).
  * The decrement value MUST be positive.
@@ -125,10 +125,10 @@ export async function recordWaste(rawData: unknown) {
     }
 
     // Convert user-friendly units to storage units
-    // PACKAGING: user enters pieces -- already correct
-    // All others: user enters grams -- convert to milligrams
+    // pcs items: user enters pieces -- already correct
+    // grams items: user enters grams -- convert to milligrams
     let wasteQty: number;
-    if (item.type === "PACKAGING") {
+    if (item.unitType === "pcs") {
       wasteQty = data.quantity;
     } else {
       wasteQty = gramsToMg(data.quantity);
@@ -287,6 +287,7 @@ export async function getItemsForReconciliation() {
         name: true,
         sku: true,
         type: true,
+        unitType: true,
         stockQty: true,
       },
       orderBy: { name: "asc" },
@@ -332,7 +333,7 @@ export async function submitReconciliation(rawData: unknown) {
     const itemIds = data.counts.map((c) => c.itemId);
     const items = await prisma.item.findMany({
       where: { id: { in: itemIds } },
-      select: { id: true, type: true, stockQty: true },
+      select: { id: true, type: true, unitType: true, stockQty: true },
     });
 
     const itemMap = new Map(items.map((i) => [i.id, i]));
@@ -349,10 +350,10 @@ export async function submitReconciliation(rawData: unknown) {
       if (!item) continue;
 
       // Convert user-entered display units to storage units
-      // PACKAGING: user enters pieces -- already correct
-      // All other types: user enters grams -- convert to milligrams
+      // pcs items: user enters pieces -- already correct
+      // grams items: user enters grams -- convert to milligrams
       const physicalStorageQty =
-        item.type === "PACKAGING"
+        item.unitType === "pcs"
           ? count.physicalCount
           : gramsToMg(count.physicalCount);
 

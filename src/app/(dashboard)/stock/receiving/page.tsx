@@ -9,6 +9,7 @@ export default async function StockReceivingPage() {
       name: true,
       sku: true,
       type: true,
+      unitType: true,
       cartonSize: true,
       unitWeightMg: true,
     },

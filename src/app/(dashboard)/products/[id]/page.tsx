@@ -102,7 +102,7 @@ export default async function ProductDetailPage({
                     </Badge>
                   </td>
                   <td className="px-4 py-2 text-right text-sm">
-                    {ing.childItemType === "PACKAGING"
+                    {ing.quantityPieces > 0
                       ? `${ing.quantityPieces} pcs`
                       : `${ing.quantityGrams}g`}
                   </td>

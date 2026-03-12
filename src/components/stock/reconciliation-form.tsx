@@ -13,6 +13,7 @@ interface ReconciliationItem {
   name: string;
   sku: string;
   type: ItemTypeValue;
+  unitType: string;
   stockQty: number;
 }
 
@@ -23,19 +24,19 @@ interface ReconciliationFormProps {
 type ItemTypeFilter = "ALL" | ItemTypeValue;
 
 /**
- * Convert storage units to display quantity string.
- * PACKAGING: pieces, all others: grams
+ * Convert storage units to display quantity.
+ * pcs items: pieces (no conversion), grams items: mg -> grams
  */
-function storageToDisplay(stockQty: number, type: ItemTypeValue): number {
-  if (type === "PACKAGING") return stockQty;
+function storageToDisplay(stockQty: number, unitType: string): number {
+  if (unitType === "pcs") return stockQty;
   return parseFloat(mgToGrams(stockQty));
 }
 
 /**
- * Unit label for an item type.
+ * Unit label for an item.
  */
-function unitLabel(type: ItemTypeValue): string {
-  return type === "PACKAGING" ? "pcs" : "g";
+function unitLabel(unitType: string): string {
+  return unitType === "pcs" ? "pcs" : "g";
 }
 
 /**
@@ -71,7 +72,7 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
     if (raw === undefined || raw === "") return null;
     const physical = parseFloat(raw);
     if (isNaN(physical)) return null;
-    const system = storageToDisplay(item.stockQty, item.type);
+    const system = storageToDisplay(item.stockQty, item.unitType);
     return parseFloat((physical - system).toFixed(2));
   }
 
@@ -82,7 +83,7 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
       if (raw === undefined || raw === "") return false;
       const physical = parseFloat(raw);
       if (isNaN(physical)) return false;
-      const system = storageToDisplay(item.stockQty, item.type);
+      const system = storageToDisplay(item.stockQty, item.unitType);
       const variance = parseFloat((physical - system).toFixed(2));
       return variance !== 0;
     }).length;
@@ -219,8 +220,8 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
             </thead>
             <tbody>
               {filteredItems.map((item) => {
-                const systemDisplay = storageToDisplay(item.stockQty, item.type);
-                const unit = unitLabel(item.type);
+                const systemDisplay = storageToDisplay(item.stockQty, item.unitType);
+                const unit = unitLabel(item.unitType);
                 const variance = getVariance(item);
 
                 let varianceDisplay = "-";

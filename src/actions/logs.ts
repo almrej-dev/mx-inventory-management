@@ -2,7 +2,7 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatPesos } from "@/lib/utils";
+import { formatPesos, mgToGrams } from "@/lib/utils";
 
 export type LogFilter = "all" | "items" | "products" | "stocks";
 
@@ -130,7 +130,7 @@ export async function getLogs(
     const stockQuery = includeStocks
       ? prisma.inventoryTransaction.findMany({
           where: dateWhere,
-          include: { item: { select: { name: true, sku: true } } },
+          include: { item: { select: { name: true, sku: true, unitType: true } } },
           orderBy: { createdAt: "desc" },
         })
       : Promise.resolve([]);
@@ -169,8 +169,12 @@ export async function getLogs(
     }));
 
     const stockEntries: LogEntry[] = stockRows.map((row) => {
+      const absQty = Math.abs(row.quantity);
+      const formattedQty = row.item.unitType === "pcs"
+        ? `${absQty.toLocaleString()} pcs`
+        : `${mgToGrams(absQty)}g`;
       const changes: Record<string, unknown> = {
-        "Quantity": row.quantity,
+        "Quantity": row.quantity < 0 ? `-${formattedQty}` : formattedQty,
       };
       if (row.costCentavos != null) changes["Cost"] = formatPesos(row.costCentavos);
       if (row.notes) changes["Notes"] = row.notes;

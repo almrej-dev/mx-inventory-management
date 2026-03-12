@@ -71,7 +71,7 @@ export function BomPreview({ bom, totalCostCentavos }: BomPreviewProps) {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                {line.itemType === "PACKAGING"
+                {line.quantityPieces > 0
                   ? `${line.quantityPieces} pcs`
                   : `${mgToGrams(line.quantityMg)}g`}
               </TableCell>

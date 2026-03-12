@@ -17,6 +17,7 @@ interface ItemOption {
   name: string;
   sku: string;
   type: ItemTypeValue;
+  unitType: string;
   cartonSize: number;
   unitWeightMg: number;
 }
@@ -66,9 +67,8 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
     const qty = Number(watchedQuantity);
     const totalUnits = qty * selectedItem.cartonSize;
 
-    if (selectedItem.type === "PACKAGING") {
-      // Packaging items: pieces
-      return `${qty} carton${qty !== 1 ? "s" : ""} = ${totalUnits.toLocaleString()} pieces`;
+    if (selectedItem.unitType === "pcs") {
+      return `${qty} carton${qty !== 1 ? "s" : ""} = ${totalUnits.toLocaleString()} pcs`;
     } else {
       // Weight items: milligrams -> grams display
       const totalMg = totalUnits * selectedItem.unitWeightMg;

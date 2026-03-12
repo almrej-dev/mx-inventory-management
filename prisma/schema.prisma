@@ -41,7 +41,8 @@ model Item {
   category     String?
   unitWeightMg Int      @map("unit_weight_mg")
   cartonSize   Int      @map("carton_size")
-  costCentavos Int      @map("cost_centavos")
+  costCentavos        Int      @map("cost_centavos")
+  costPerCartonCentavos Int    @default(0) @map("cost_per_carton_centavos")
   stockQty     Int      @default(0) @map("stock_qty")
   minStockQty  Int      @default(0) @map("min_stock_qty")
   createdAt    DateTime @default(now()) @map("created_at")

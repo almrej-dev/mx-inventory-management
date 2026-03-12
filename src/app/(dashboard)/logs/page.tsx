@@ -8,14 +8,16 @@ export default async function LogsPage({
 }: {
   searchParams: Promise<{ filter?: string; from?: string; to?: string }>;
 }) {
-  const { userRole } = await getAuth();
+  const [{ userRole }, { filter: rawFilter, from: rawFrom, to: rawTo }, bounds] = await Promise.all([
+    getAuth(),
+    searchParams,
+    getLogDateBounds(),
+  ]);
+
   if (userRole !== "admin") redirect("/");
 
-  const { filter: rawFilter, from: rawFrom, to: rawTo } = await searchParams;
   const filter = (rawFilter ?? "all") as LogFilter;
   const today = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Manila" }).slice(0, 10);
-
-  const bounds = await getLogDateBounds();
 
   // No logs exist at all — show empty state
   if (!bounds) {

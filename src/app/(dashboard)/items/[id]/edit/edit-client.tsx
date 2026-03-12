@@ -47,7 +47,7 @@ export function EditItemClient({ item }: EditItemClientProps) {
         category: item.category,
         unitWeightMg: item.unitWeightMg,
         cartonSize: item.cartonSize,
-        costCentavos: item.costCentavos,
+        costPerCartonCentavos: item.costCentavos,
         minStockQty: item.minStockQty,
       }}
       onSubmit={handleSubmit}

@@ -310,6 +310,8 @@ export interface ProductListItem {
   name: string;
   type: string;
   ingredientCount: number;
+  ingredients: { name: string; sku: string; quantityMg: number }[];
+  totalWeightMg: number;
   totalCostCentavos: number;
   costPesos: string;
 }
@@ -340,6 +342,7 @@ export async function getProducts(type?: "FINISHED" | "SEMI_FINISHED"): Promise<
                 sku: true,
                 type: true,
                 costCentavos: true,
+                cartonSize: true,
                 unitWeightMg: true,
               },
             },
@@ -353,12 +356,15 @@ export async function getProducts(type?: "FINISHED" | "SEMI_FINISHED"): Promise<
       let totalCostCentavos = 0;
       for (const ing of item.recipeIngredients) {
         const child = ing.childItem;
+        const unitCost = child.cartonSize > 0
+          ? Math.round(child.costCentavos / child.cartonSize)
+          : child.costCentavos;
         if (child.type === "PACKAGING") {
-          totalCostCentavos += ing.quantityPieces * child.costCentavos;
+          totalCostCentavos += ing.quantityPieces * unitCost;
         } else {
           if (child.unitWeightMg > 0) {
             totalCostCentavos += Math.round(
-              (ing.quantityMg * child.costCentavos) / child.unitWeightMg
+              (ing.quantityMg * unitCost) / child.unitWeightMg
             );
           }
         }
@@ -370,6 +376,12 @@ export async function getProducts(type?: "FINISHED" | "SEMI_FINISHED"): Promise<
         name: item.name,
         type: item.type,
         ingredientCount: item.recipeIngredients.length,
+        ingredients: item.recipeIngredients.map((ing) => ({
+          name: ing.childItem.name,
+          sku: ing.childItem.sku,
+          quantityMg: ing.quantityMg,
+        })),
+        totalWeightMg: item.recipeIngredients.reduce((sum, ing) => sum + ing.quantityMg, 0),
         totalCostCentavos,
         costPesos: centavosToPesos(totalCostCentavos),
       };

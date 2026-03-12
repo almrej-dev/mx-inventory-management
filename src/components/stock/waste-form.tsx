@@ -17,6 +17,7 @@ interface ItemOption {
   name: string;
   sku: string;
   type: ItemTypeValue;
+  unitType: string;
 }
 
 interface WasteFormProps {
@@ -54,10 +55,10 @@ export function WasteForm({ items }: WasteFormProps) {
     [items, watchedItemId]
   );
 
-  // Dynamic unit label based on item type
+  // Dynamic unit label based on item unitType
   const quantityLabel = useMemo(() => {
     if (!selectedItem) return "Quantity";
-    return selectedItem.type === "PACKAGING"
+    return selectedItem.unitType === "pcs"
       ? "Quantity (pieces)"
       : "Quantity (grams)";
   }, [selectedItem]);

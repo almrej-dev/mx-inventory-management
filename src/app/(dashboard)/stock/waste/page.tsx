@@ -8,6 +8,7 @@ export default async function WastePage() {
       name: true,
       sku: true,
       type: true,
+      unitType: true,
     },
     orderBy: { name: "asc" },
   });

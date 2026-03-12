@@ -19,7 +19,7 @@ interface ItemFormProps {
     category: string | null;
     unitWeightMg: number;
     cartonSize: number;
-    costCentavos: number;
+    costPerCartonCentavos: number;
     minStockQty: number;
   };
   onSubmit: (data: ItemFormData) => Promise<{
@@ -67,7 +67,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
           category: initialData.category || '',
           unitWeightGrams: initialData.unitWeightMg / 1000,
           cartonSize: initialData.cartonSize,
-          costPesos: initialData.costCentavos / 100,
+          costPesos: initialData.costPerCartonCentavos / 100,
           minStockQty: initialData.minStockQty
         }
       : {
@@ -84,6 +84,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
 
   const unitWeightGrams = watch('unitWeightGrams');
   const cartonSize = watch('cartonSize');
+  const costPesos = watch('costPesos');
 
   const cartonTotal =
     unitWeightGrams && cartonSize ? cartonSize * unitWeightGrams : 0;
@@ -245,7 +246,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="costPesos">Cost per Unit (PHP)</Label>
+          <Label htmlFor="costPesos">Cost per Carton (PHP)</Label>
           <Input
             id="costPesos"
             type="number"
@@ -259,6 +260,23 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
               {errors.costPesos.message}
             </p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="unitCost">Unit Cost (PHP)</Label>
+          <Input
+            id="unitCost"
+            type="text"
+            readOnly
+            value={
+              cartonSize > 0 && costPesos != null && !isNaN(costPesos)
+                ? (costPesos / cartonSize).toFixed(2)
+                : ''
+            }
+            placeholder="—"
+            className="bg-muted text-muted-foreground pointer-events-none"
+            tabIndex={-1}
+          />
         </div>
 
         <div className="space-y-2">

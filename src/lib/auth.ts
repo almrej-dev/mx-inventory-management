@@ -15,14 +15,7 @@ interface JwtPayload {
 export const getAuth = cache(async () => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { user: null, userRole: "viewer" as AppRole, userName: "" };
-  }
-
+  // getSession reads from cookies — no network call, fast
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -33,17 +26,24 @@ export const getAuth = cache(async () => {
     userRole = jwt.user_role || "viewer";
   }
 
-  let userName = "";
-  try {
-    const profile = await prisma.profile.findUnique({
-      where: { id: user.id },
-    });
-    userName = profile?.fullName || "";
-  } catch {
-    // Profile may not exist yet
+  // Use session sub as provisional user ID to parallelize getUser + profile fetch
+  const sessionUserId = session
+    ? (jwtDecode<{ sub: string }>(session.access_token).sub ?? null)
+    : null;
+
+  // Run network validation and DB lookup in parallel
+  const [{ data: { user } }, profile] = await Promise.all([
+    supabase.auth.getUser(),
+    sessionUserId
+      ? prisma.profile.findUnique({ where: { id: sessionUserId } }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  if (!user) {
+    return { user: null, userRole: "viewer" as AppRole, userName: "" };
   }
 
-  return { user, userRole, userName };
+  return { user, userRole, userName: profile?.fullName || "" };
 });
 
 const roleHierarchy: Record<AppRole, number> = {

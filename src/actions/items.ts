@@ -57,6 +57,8 @@ export async function createItem(rawData: unknown) {
   }
 
   const { unitWeightGrams, costPesos, category, ...rest } = parsed.data;
+  const costPerCartonCentavos = pesosToCentavos(costPesos);
+  const unitCostCentavos = rest.cartonSize > 0 ? Math.round(costPerCartonCentavos / rest.cartonSize) : costPerCartonCentavos;
 
   try {
     const item = await prisma.item.create({
@@ -64,7 +66,8 @@ export async function createItem(rawData: unknown) {
         ...rest,
         category: category || null,
         unitWeightMg: gramsToMg(unitWeightGrams),
-        costCentavos: pesosToCentavos(costPesos),
+        costCentavos: unitCostCentavos,
+        costPerCartonCentavos,
       },
     });
 
@@ -128,6 +131,8 @@ export async function updateItem(id: number, rawData: unknown) {
   }
 
   const { unitWeightGrams, costPesos, category, ...rest } = parsed.data;
+  const costPerCartonCentavos = pesosToCentavos(costPesos);
+  const unitCostCentavos = rest.cartonSize > 0 ? Math.round(costPerCartonCentavos / rest.cartonSize) : costPerCartonCentavos;
 
   try {
     const item = await prisma.item.update({
@@ -136,7 +141,8 @@ export async function updateItem(id: number, rawData: unknown) {
         ...rest,
         category: category || null,
         unitWeightMg: gramsToMg(unitWeightGrams),
-        costCentavos: pesosToCentavos(costPesos),
+        costCentavos: unitCostCentavos,
+        costPerCartonCentavos,
       },
     });
 
@@ -231,6 +237,7 @@ export interface ItemWithDisplayValues {
   unitWeightMg: number;
   cartonSize: number;
   costCentavos: number;
+  costPerCartonCentavos: number;
   stockQty: number;
   minStockQty: number;
   createdAt: Date;

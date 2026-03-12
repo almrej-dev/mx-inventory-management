@@ -73,14 +73,14 @@ export function ItemRow({
       </div>
 
       {/* Quantity Input */}
-      <div className="w-32">
+      <div className="w-32 space-y-1">
         {!isGrams ? (
           <Input
             type="number"
             step="1"
             min="0"
             placeholder="Qty"
-            className={`h-8${rowErrors?.quantityPieces ? ' border-destructive focus-visible:ring-destructive/50' : ''}`}
+            className={`h-8${rowErrors?.quantityPieces || rowErrors?.quantityGrams ? ' border-destructive focus-visible:ring-destructive/50' : ''}`}
             {...register(`ingredients.${index}.quantityPieces`, {
               valueAsNumber: true
             })}
@@ -96,6 +96,11 @@ export function ItemRow({
               valueAsNumber: true
             })}
           />
+        )}
+        {(rowErrors?.quantityGrams || rowErrors?.quantityPieces) && (
+          <p className="text-xs text-destructive">
+            {rowErrors?.quantityGrams?.message ?? rowErrors?.quantityPieces?.message}
+          </p>
         )}
       </div>
 

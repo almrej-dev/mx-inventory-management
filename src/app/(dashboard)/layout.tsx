@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { NavigationAwareMain } from "@/components/layout/navigation-aware-main";
 import { getAuth } from "@/lib/auth";
 
 export default async function DashboardLayout({
@@ -23,7 +24,7 @@ export default async function DashboardLayout({
           userName={userName}
           userRole={userRole}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <NavigationAwareMain>{children}</NavigationAwareMain>
       </div>
     </div>
   );

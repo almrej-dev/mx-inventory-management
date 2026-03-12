@@ -49,6 +49,7 @@ export async function explodeBom(
           sku: true,
           type: true,
           costCentavos: true,
+          cartonSize: true,
           unitWeightMg: true,
         },
       },
@@ -74,6 +75,9 @@ export async function explodeBom(
     }
 
     // Leaf node: RAW_MATERIAL, PACKAGING, or SEMI_FINISHED without recipe
+    const unitCostCentavos = child.cartonSize > 0
+      ? Math.round(child.costCentavos / child.cartonSize)
+      : child.costCentavos;
     lines.push({
       itemId: child.id,
       itemName: child.name,
@@ -81,7 +85,7 @@ export async function explodeBom(
       itemType: child.type as ItemTypeValue,
       quantityMg: ing.quantityMg,
       quantityPieces: ing.quantityPieces,
-      unitCostCentavos: child.costCentavos,
+      unitCostCentavos,
       unitWeightMg: child.unitWeightMg,
       lineCostCentavos: 0, // calculated after merging
     });

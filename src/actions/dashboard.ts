@@ -19,14 +19,14 @@ import {
 function itemValueCentavos(item: {
   type: string;
   stockQty: number;
-  costCentavos: number;
+  costPerCartonCentavos: number;
   cartonSize: number;
   unitWeightMg: number;
 }): number {
   if (item.type === "PACKAGING") {
     if (item.cartonSize > 0) {
       return Math.round(
-        (item.stockQty / item.cartonSize) * item.costCentavos
+        (item.stockQty / item.cartonSize) * item.costPerCartonCentavos
       );
     }
     return 0;
@@ -35,7 +35,7 @@ function itemValueCentavos(item: {
   const cartonWeightMg = item.cartonSize * item.unitWeightMg;
   if (cartonWeightMg > 0) {
     return Math.round(
-      (item.stockQty / cartonWeightMg) * item.costCentavos
+      (item.stockQty / cartonWeightMg) * item.costPerCartonCentavos
     );
   }
   return 0;
@@ -52,7 +52,7 @@ export async function getDashboardSummary() {
     select: {
       id: true,
       stockQty: true,
-      costCentavos: true,
+      costPerCartonCentavos: true,
       minStockQty: true,
       type: true,
       unitWeightMg: true,
@@ -307,7 +307,7 @@ export async function getInventoryByCategory() {
       category: true,
       type: true,
       stockQty: true,
-      costCentavos: true,
+      costPerCartonCentavos: true,
       unitWeightMg: true,
       cartonSize: true,
     },

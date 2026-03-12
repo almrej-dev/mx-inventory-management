@@ -90,8 +90,21 @@ export function getItemColumns({ onDelete }: ColumnOptions): ColumnDef<ItemWithD
       accessorKey: "unitWeightMg",
       header: "Weight",
       cell: ({ row }) => {
+        if (row.original.unitType === "pcs") {
+          return <span className="text-muted-foreground">--</span>;
+        }
         const mg = row.getValue("unitWeightMg") as number;
         return `${mgToGrams(mg)}g`;
+      },
+    },
+    {
+      id: "pieces",
+      header: "Pieces",
+      cell: ({ row }) => {
+        if (row.original.unitType !== "pcs") {
+          return <span className="text-muted-foreground">--</span>;
+        }
+        return `${mgToGrams(row.original.unitWeightMg)} pcs`;
       },
     },
     {
@@ -104,22 +117,20 @@ export function getItemColumns({ onDelete }: ColumnOptions): ColumnDef<ItemWithD
     },
     {
       accessorKey: "costCentavos",
-      header: "Cost",
+      header: "Carton Cost",
       cell: ({ row }) => {
         const centavos = row.getValue("costCentavos") as number;
         return `PHP ${centavosToPesos(centavos)}`;
       },
     },
     {
-      accessorKey: "stockQty",
-      header: "Stock",
+      id: "unitCost",
+      header: "Unit Cost",
       cell: ({ row }) => {
-        const qty = row.getValue("stockQty") as number;
-        const type = row.original.type;
-        if (type === "PACKAGING") {
-          return `${qty.toLocaleString()} pcs`;
-        }
-        return `${mgToGrams(qty)}g`;
+        const cartonCost = row.original.costCentavos;
+        const cartonSize = row.original.cartonSize;
+        const unitCost = cartonSize > 0 ? Math.round(cartonCost / cartonSize) : cartonCost;
+        return `PHP ${centavosToPesos(unitCost)}`;
       },
     },
     {

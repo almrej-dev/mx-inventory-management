@@ -6,6 +6,7 @@ import { ITEM_TYPES } from '@/lib/constants';
 import { ArrowUpDown, Eye, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { ProductListItem } from '@/actions/products';
+import { mgToGrams } from '@/lib/utils';
 
 const typeLabels: Record<string, string> = {};
 for (const t of ITEM_TYPES) {
@@ -52,11 +53,23 @@ export function getProductColumns({
       )
     },
     {
-      accessorKey: 'itemCount',
+      accessorKey: 'ingredients',
       header: 'Items',
       cell: ({ row }) => {
-        const count = row.getValue('itemCount') as number;
-        return `${count} item${count !== 1 ? 's' : ''}`;
+        const ingredients = row.getValue('ingredients') as { name: string; sku: string; quantityMg: number }[];
+        if (!ingredients.length) return <span className="text-muted-foreground">—</span>;
+        return ingredients.map((i) =>
+          i.quantityMg > 0 ? `${i.name} (${mgToGrams(i.quantityMg)}g)` : i.name
+        ).join(', ');
+      }
+    },
+    {
+      accessorKey: 'totalWeightMg',
+      header: 'Total Weight',
+      cell: ({ row }) => {
+        const totalWeightMg = row.getValue('totalWeightMg') as number;
+        if (!totalWeightMg) return <span className="text-muted-foreground">—</span>;
+        return `${mgToGrams(totalWeightMg)}g`;
       }
     },
     {
