@@ -32,6 +32,9 @@ async function main() {
   // 1. Delete all data (order respects foreign keys)
   console.log('Clearing all data...');
 
+  const auditLogs = await prisma.auditLog.deleteMany();
+  console.log(`  Deleted ${auditLogs.count} audit logs`);
+
   const salesLines = await prisma.salesLine.deleteMany();
   console.log(`  Deleted ${salesLines.count} sales lines`);
 
