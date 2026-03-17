@@ -15,6 +15,27 @@ import type { AppRole } from "@/types";
 
 type View = "list" | "scan" | "detail";
 
+type ZReadingDetailData = {
+  id: number;
+  storeName: string | null;
+  receiptNumber: string | null;
+  receiptDate: string | Date;
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentMethod: string | null;
+  imageUrl: string;
+  notes: string | null;
+  status: string;
+  lines: {
+    id: number;
+    productName: string;
+    quantity: number;
+    unitPriceCentavos: number;
+    lineTotalCentavos: number;
+  }[];
+};
+
 interface ZReadingClientProps {
   initialData: ZReadingRow[];
   userRole: AppRole;
@@ -25,9 +46,9 @@ export function ZReadingClient({
   userRole,
 }: ZReadingClientProps) {
   const [view, setView] = useState<View>("list");
-  const [selectedReading, setSelectedReading] = useState<Awaited<
-    ReturnType<typeof getZReadingDetail>
-  >["reading"]>(null);
+  const [selectedReading, setSelectedReading] = useState<
+    ZReadingDetailData | null
+  >(null);
   const [scannedData, setScannedData] = useState<ZReadingFormData | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
