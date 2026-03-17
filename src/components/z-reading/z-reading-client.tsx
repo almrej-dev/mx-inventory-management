@@ -25,6 +25,7 @@ type ZReadingDetailData = {
   total: number;
   paymentMethod: string | null;
   imageUrl: string;
+  signedImageUrl: string;
   notes: string | null;
   status: string;
   lines: {

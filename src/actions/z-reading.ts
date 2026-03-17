@@ -2,6 +2,7 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { zReadingFormSchema } from "@/schemas/z-reading";
 
@@ -36,7 +37,18 @@ export async function getZReadingDetail(id: number) {
     });
 
     if (!reading) return { error: "Z-reading not found" };
-    return { reading };
+
+    // Generate a signed URL (1 hour expiry) from the stored path
+    let signedImageUrl = "";
+    if (reading.imageUrl) {
+      const supabase = await createClient();
+      const { data } = await supabase.storage
+        .from("z-readings")
+        .createSignedUrl(reading.imageUrl, 3600);
+      signedImageUrl = data?.signedUrl || "";
+    }
+
+    return { reading: { ...reading, signedImageUrl } };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to load Z-reading",
@@ -44,7 +56,7 @@ export async function getZReadingDetail(id: number) {
   }
 }
 
-export async function saveZReading(rawData: unknown, imageUrl: string) {
+export async function saveZReading(rawData: unknown, imagePath: string) {
   const { user } = await requireRole("staff");
 
   const parsed = zReadingFormSchema.safeParse(rawData);
@@ -65,7 +77,7 @@ export async function saveZReading(rawData: unknown, imageUrl: string) {
           tax: data.taxPesos ? Math.round(data.taxPesos * 100) : 0,
           total: data.totalPesos ? Math.round(data.totalPesos * 100) : 0,
           paymentMethod: data.paymentMethod || null,
-          imageUrl,
+          imageUrl: imagePath,
           notes: data.notes || null,
           status: "completed",
           createdBy: user.id,

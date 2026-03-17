@@ -18,6 +18,7 @@ interface ZReadingDetailProps {
     total: number;
     paymentMethod: string | null;
     imageUrl: string;
+    signedImageUrl: string;
     notes: string | null;
     status: string;
     lines: {
@@ -43,7 +44,7 @@ export function ZReadingDetail({
 }: ZReadingDetailProps) {
   const [imagePreviewUrl] = useState(() => {
     if (imageFile) return URL.createObjectURL(imageFile);
-    return reading?.imageUrl || "";
+    return reading?.signedImageUrl || "";
   });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -85,11 +86,9 @@ export function ZReadingDetail({
         throw new Error(`Image upload failed: ${uploadError.message}`);
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("z-readings").getPublicUrl(path);
-
-      const result = await saveZReading(data, publicUrl);
+      // Store just the storage path, not a public URL.
+      // The server generates signed URLs on demand.
+      const result = await saveZReading(data, path);
       if (result.error) throw new Error(result.error);
       setSuccessMessage("Z-reading saved successfully!");
       setTimeout(onBack, 1000);
