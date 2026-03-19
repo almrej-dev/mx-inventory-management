@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from "react";
 import { Upload, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { parseReceiptText, type ParsedReceipt } from "@/lib/receipt-parser";
-import { preprocessReceiptImage } from "@/lib/image-preprocess";
 import { scanReceipt } from "@/actions/receipt-scan";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +29,6 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
       setProgress(0);
 
       try {
-        // Try OCR.space API first (higher accuracy for receipts)
         setStatusText("Scanning receipt...");
         setProgress(30);
 
@@ -38,46 +36,14 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
         formData.append("image", file);
         const apiResult = await scanReceipt(formData);
 
-        if (apiResult.success) {
-          setProgress(90);
-          setStatusText("Parsing results...");
-          const parsed = parseReceiptText(apiResult.text);
-          onScanned(parsed, file, apiResult.text);
-          return;
+        if (!apiResult.success) {
+          throw new Error(apiResult.error || "OCR processing failed");
         }
 
-        // Fall back to Tesseract if API unavailable
-        console.warn("OCR.space unavailable, falling back to Tesseract:", apiResult.error);
-
-        setStatusText("Preprocessing image...");
-        setProgress(0);
-        const processedBlob = await preprocessReceiptImage(file);
-
-        setStatusText("Scanning receipt (offline)...");
-        const { createWorker, PSM } = await import("tesseract.js");
-
-        const worker = await createWorker("eng", undefined, {
-          logger: (m: { progress: number }) => {
-            if (m.progress) {
-              setProgress(Math.round(m.progress * 100));
-            }
-          },
-        });
-
-        await worker.setParameters({
-          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-          preserve_interword_spaces: "1",
-          tessedit_char_blacklist: "|{}[]\\~`",
-        });
-
-        const {
-          data: { text },
-        } = await worker.recognize(processedBlob);
-
-        await worker.terminate();
-
-        const parsed = parseReceiptText(text);
-        onScanned(parsed, file, text);
+        setProgress(90);
+        setStatusText("Parsing results...");
+        const parsed = parseReceiptText(apiResult.text);
+        onScanned(parsed, file, apiResult.text);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "OCR processing failed"

@@ -8,6 +8,7 @@ import {
   manualEntrySchema,
   type ManualEntryFormData,
 } from "@/schemas/sales";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 import { getFinishedItems, processSalesLines } from "@/actions/sales";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,20 +30,27 @@ export function ManualEntryForm() {
   const [finishedItems, setFinishedItems] = useState<FinishedItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
 
+  const DRAFT_KEY = "sales-manual";
+  const defaults: ManualEntryFormData = {
+    saleDate: new Date().toISOString().split("T")[0],
+    lines: [{ itemId: 0, quantity: 1, unitPricePesos: undefined }],
+    notes: "",
+  };
+
+  const form = useForm<ManualEntryFormData>({
+    resolver: standardSchemaResolver(manualEntrySchema),
+    defaultValues: defaults,
+  });
+
   const {
     register,
     control,
     handleSubmit,
     clearErrors,
     formState: { errors },
-  } = useForm<ManualEntryFormData>({
-    resolver: standardSchemaResolver(manualEntrySchema),
-    defaultValues: {
-      saleDate: new Date().toISOString().split("T")[0],
-      lines: [{ itemId: 0, quantity: 1, unitPricePesos: undefined }],
-      notes: "",
-    },
-  });
+  } = form;
+
+  const { clearDraft } = useFormPersistence(DRAFT_KEY, form);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -91,6 +99,7 @@ export function ManualEntryForm() {
         return;
       }
 
+      clearDraft();
       setFormSuccess("Sales recorded successfully! Redirecting...");
       setTimeout(() => {
         router.push("/sales/history");
