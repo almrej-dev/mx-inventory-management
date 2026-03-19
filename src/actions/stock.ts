@@ -2,7 +2,7 @@
 
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { receivingSchema, wasteSchema, reconciliationSchema } from "@/schemas/stock";
+import { receivingSchema, batchReceivingSchema, wasteSchema, batchWasteSchema, reconciliationSchema } from "@/schemas/stock";
 import { pesosToCentavos, gramsToMg } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
@@ -92,6 +92,97 @@ export async function receiveStock(rawData: unknown) {
 }
 
 /**
+ * Record incoming stock for multiple items in a single atomic transaction.
+ *
+ * Batch version of receiveStock — processes all entries in one $transaction.
+ * Used by the table-based receiving form where staff can enter quantities
+ * for multiple items at once.
+ */
+export async function receiveStockBatch(rawData: unknown) {
+  const { user } = await requireRole("staff");
+
+  const parsed = batchReceivingSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: "Validation failed. Please check your input." };
+  }
+
+  const data = parsed.data;
+
+  try {
+    const itemIds = data.entries.map((e) => e.itemId);
+    const items = await prisma.item.findMany({
+      where: { id: { in: itemIds } },
+    });
+    const itemMap = new Map(items.map((i) => [i.id, i]));
+
+    const batchRefId = `RCV-${Date.now()}`;
+
+    type TxOp =
+      | ReturnType<typeof prisma.inventoryTransaction.create>
+      | ReturnType<typeof prisma.item.update>;
+
+    const ops: TxOp[] = [];
+
+    for (const entry of data.entries) {
+      const item = itemMap.get(entry.itemId);
+      if (!item) continue;
+
+      let calculatedQty: number;
+      if (item.unitType === "pcs") {
+        calculatedQty = entry.quantityCartons * item.cartonSize;
+      } else {
+        calculatedQty = entry.quantityCartons * item.cartonSize * item.unitWeightMg;
+      }
+
+      const totalCostCentavos = pesosToCentavos(entry.costPesos) * entry.quantityCartons;
+
+      ops.push(
+        prisma.inventoryTransaction.create({
+          data: {
+            itemId: entry.itemId,
+            type: "RECEIVE",
+            quantity: calculatedQty,
+            costCentavos: totalCostCentavos,
+            notes: data.notes || null,
+            createdBy: user.id,
+            referenceId: batchRefId,
+          },
+        })
+      );
+
+      ops.push(
+        prisma.item.update({
+          where: { id: entry.itemId },
+          data: {
+            stockQty: { increment: calculatedQty },
+            costCentavos: pesosToCentavos(entry.costPesos),
+          },
+        })
+      );
+    }
+
+    if (ops.length === 0) {
+      return { error: "No valid items to receive." };
+    }
+
+    await prisma.$transaction(ops);
+
+    revalidatePath("/stock/receiving");
+    revalidatePath("/items");
+    revalidatePath("/logs");
+
+    return {
+      success: true,
+      message: `${data.entries.length} item${data.entries.length !== 1 ? "s" : ""} received successfully.`,
+    };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to record receiving",
+    };
+  }
+}
+
+/**
  * Record waste or spoilage for an item.
  *
  * Uses prisma.$transaction to ATOMICALLY:
@@ -162,6 +253,95 @@ export async function recordWaste(rawData: unknown) {
     revalidatePath("/logs");
 
     return { success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to record waste",
+    };
+  }
+}
+
+/**
+ * Record waste for multiple items in a single atomic transaction.
+ *
+ * Batch version of recordWaste — processes all entries in one $transaction.
+ * Used by the table-based waste form where staff can enter waste quantities
+ * for multiple items at once.
+ *
+ * Unit interpretation depends on item.unitType:
+ *   - pcs: user enters in pieces (stock_qty is pieces)
+ *   - grams: user enters in grams; server converts to milligrams
+ */
+export async function recordWasteBatch(rawData: unknown) {
+  const { user } = await requireRole("staff");
+
+  const parsed = batchWasteSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: "Validation failed. Please check your input." };
+  }
+
+  const data = parsed.data;
+
+  try {
+    const itemIds = data.entries.map((e) => e.itemId);
+    const items = await prisma.item.findMany({
+      where: { id: { in: itemIds } },
+    });
+    const itemMap = new Map(items.map((i) => [i.id, i]));
+
+    const batchRefId = `WST-${Date.now()}`;
+
+    type TxOp =
+      | ReturnType<typeof prisma.inventoryTransaction.create>
+      | ReturnType<typeof prisma.item.update>;
+
+    const ops: TxOp[] = [];
+
+    for (const entry of data.entries) {
+      const item = itemMap.get(entry.itemId);
+      if (!item) continue;
+
+      // Convert user-friendly units to storage units
+      const wasteQty =
+        item.unitType === "pcs" ? entry.quantity : gramsToMg(entry.quantity);
+
+      ops.push(
+        prisma.inventoryTransaction.create({
+          data: {
+            itemId: entry.itemId,
+            type: "WASTE",
+            quantity: -wasteQty, // NEGATIVE -- waste removes stock
+            referenceId: batchRefId,
+            notes: `[${entry.reasonCode}]${data.notes ? " " + data.notes : ""}`,
+            createdBy: user.id,
+          },
+        })
+      );
+
+      ops.push(
+        prisma.item.update({
+          where: { id: entry.itemId },
+          data: {
+            stockQty: { decrement: wasteQty },
+          },
+        })
+      );
+    }
+
+    if (ops.length === 0) {
+      return { error: "No valid items to record." };
+    }
+
+    await prisma.$transaction(ops);
+
+    revalidatePath("/stock/waste");
+    revalidatePath("/items");
+    revalidatePath("/");
+    revalidatePath("/logs");
+
+    return {
+      success: true,
+      message: `${data.entries.length} waste record${data.entries.length !== 1 ? "s" : ""} submitted successfully.`,
+    };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to record waste",
