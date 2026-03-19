@@ -26,22 +26,17 @@ export const getAuth = cache(async () => {
     userRole = jwt.user_role || "viewer";
   }
 
-  // Use session sub as provisional user ID to parallelize getUser + profile fetch
-  const sessionUserId = session
-    ? (jwtDecode<{ sub: string }>(session.access_token).sub ?? null)
-    : null;
-
-  // Run network validation and DB lookup in parallel
-  const [{ data: { user } }, profile] = await Promise.all([
-    supabase.auth.getUser(),
-    sessionUserId
-      ? prisma.profile.findUnique({ where: { id: sessionUserId } }).catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  // Session is already validated by middleware (supabase.auth.getUser()),
+  // so we can trust session.user without an extra network round-trip.
+  const user = session?.user ?? null;
 
   if (!user) {
     return { user: null, userRole: "viewer" as AppRole, userName: "" };
   }
+
+  const profile = await prisma.profile
+    .findUnique({ where: { id: user.id } })
+    .catch(() => null);
 
   return { user, userRole, userName: profile?.fullName || "" };
 });
