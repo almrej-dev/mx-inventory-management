@@ -35,7 +35,7 @@ export function ReorderRecommendations({
         <div className="grid gap-6 md:grid-cols-2">
           {/* Reorder Now section */}
           <div>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-400">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-destructive">
               <ShoppingCart className="h-4 w-4" />
               Reorder Now
             </div>
@@ -60,8 +60,8 @@ export function ReorderRecommendations({
                       <p
                         className={`font-semibold ${
                           item.stockQty <= 0
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-amber-600 dark:text-amber-400"
+                            ? "text-destructive"
+                            : "text-warning"
                         }`}
                       >
                         {item.stockQty.toLocaleString()}
@@ -78,7 +78,7 @@ export function ReorderRecommendations({
 
           {/* Limit Buying section */}
           <div>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-chart-2">
               <TrendingDown className="h-4 w-4" />
               Limit Buying
             </div>
@@ -100,7 +100,7 @@ export function ReorderRecommendations({
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-blue-600 dark:text-blue-400">
+                      <p className="font-semibold text-chart-2">
                         {item.stockQty.toLocaleString()}
                       </p>
                       <p className="text-xs text-muted-foreground">

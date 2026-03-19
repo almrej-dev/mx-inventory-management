@@ -29,7 +29,7 @@ export function LowStockAlerts({ data }: LowStockAlertsProps) {
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
+          <div className="flex items-center gap-2 rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
             <CheckCircle className="h-4 w-4" />
             All items are well stocked
           </div>
@@ -42,8 +42,8 @@ export function LowStockAlerts({ data }: LowStockAlertsProps) {
                   key={item.id}
                   className={`flex items-center justify-between rounded-md p-3 text-sm ${
                     isCritical
-                      ? "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300"
-                      : "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                      ? "bg-destructive-muted text-destructive-muted-foreground"
+                      : "bg-warning-muted text-warning-muted-foreground"
                   }`}
                 >
                   <div>

@@ -48,13 +48,13 @@ export function SalesCard({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Yesterday</p>
-            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            <p className="text-xl font-bold tracking-tight text-success">
               {formatPesos(yesterdayCentavos)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">This week</p>
-            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            <p className="text-xl font-bold tracking-tight text-success">
               {formatPesos(weekCentavos)}
             </p>
           </div>
@@ -89,7 +89,7 @@ export function SalesCard({
               />
               <Bar
                 dataKey="totalCentavos"
-                fill="oklch(0.546 0.245 262.881)"
+                fill="var(--chart-3)"
                 radius={[3, 3, 0, 0]}
                 maxBarSize={32}
               />

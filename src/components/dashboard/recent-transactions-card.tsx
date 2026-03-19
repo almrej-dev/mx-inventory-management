@@ -36,22 +36,22 @@ const typeConfig: Record<
   RECEIVE: {
     icon: ArrowDownToLine,
     label: "Received",
-    color: "text-emerald-600 dark:text-emerald-400",
+    color: "text-success",
   },
   SALE_DEDUCTION: {
     icon: ArrowUpFromLine,
     label: "Sold",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-chart-2",
   },
   WASTE: {
     icon: Trash2,
     label: "Waste",
-    color: "text-red-600 dark:text-red-400",
+    color: "text-destructive",
   },
   ADJUSTMENT: {
     icon: Settings2,
     label: "Adjusted",
-    color: "text-amber-600 dark:text-amber-400",
+    color: "text-warning",
   },
 };
 
@@ -96,8 +96,8 @@ export function RecentTransactionsCard({
                       {tx.itemName}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {config.label} &middot; qty {tx.quantity.toLocaleString()}{" "}
-                      &middot;{" "}
+                      {config.label} · qty {tx.quantity.toLocaleString()}{" "}
+                      ·{" "}
                       {formatDistanceToNow(new Date(tx.createdAt), {
                         addSuffix: true,
                       })}
