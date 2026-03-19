@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { itemSchema, type ItemFormData } from '@/schemas/item';
+import { useFormPersistence } from '@/hooks/use-form-persistence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,17 +49,24 @@ const categoryCodes = [
   { code: 'LB', meaning: 'Labels & Stickers' }
 ];
 
-export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFormProps) {
+const DRAFT_KEY = 'item-create';
+
+export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    clearErrors,
-    formState: { errors, isSubmitting, isDirty }
-  } = useForm<ItemFormData>({
+  const createDefaults: ItemFormData = {
+    name: '',
+    sku: '',
+    type: 'RAW_MATERIAL',
+    unitType: 'grams',
+    category: '',
+    unitWeightGrams: 0,
+    cartonSize: 1,
+    costPesos: 0,
+    minStockQty: 0
+  };
+
+  const form = useForm<ItemFormData>({
     resolver: standardSchemaResolver(itemSchema),
     defaultValues: initialData
       ? {
@@ -72,19 +80,20 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
           costPesos: initialData.costPerCartonCentavos / 100,
           minStockQty: initialData.minStockQty
         }
-      : {
-          type: 'RAW_MATERIAL',
-          unitType: 'grams',
-          unitWeightGrams: 0,
-          cartonSize: 1,
-          costPesos: 0,
-          minStockQty: 0
-        }
+      : createDefaults
   });
 
-  useEffect(() => {
-    onDirtyChange?.(isDirty);
-  }, [isDirty, onDirtyChange]);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    clearErrors,
+    formState: { errors, isSubmitting }
+  } = form;
+
+  const isCreate = mode === 'create';
+  const { clearDraft } = useFormPersistence(DRAFT_KEY, form, isCreate);
 
   const unitType = watch('unitType') ?? 'grams';
 
@@ -99,6 +108,11 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
     setServerError(null);
     const result = await onSubmit(data);
 
+    if (result.success) {
+      if (isCreate) clearDraft();
+      return;
+    }
+
     if (result.error) {
       if (result.error._form) {
         setServerError(result.error._form[0]);
@@ -112,7 +126,8 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
           else otherMsgs.push(msg);
         }
         const parts: string[] = [];
-        if (requiredFields.length) parts.push(`${requiredFields.join(', ')} is required`);
+        if (requiredFields.length)
+          parts.push(`${requiredFields.join(', ')} is required`);
         parts.push(...otherMsgs);
         setServerError(parts.join('; '));
       }
@@ -132,7 +147,12 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
       >
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" placeholder="e.g., Sugar" aria-invalid={!!errors.name} {...register('name')} />
+          <Input
+            id="name"
+            placeholder="e.g., Sugar"
+            aria-invalid={!!errors.name}
+            {...register('name')}
+          />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
           )}
@@ -140,7 +160,12 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
 
         <div className="space-y-2">
           <Label htmlFor="sku">SKU</Label>
-          <Input id="sku" placeholder="e.g., RM-DC-001" aria-invalid={!!errors.sku} {...register('sku')} />
+          <Input
+            id="sku"
+            placeholder="e.g., RM-DC-001"
+            aria-invalid={!!errors.sku}
+            {...register('sku')}
+          />
           {errors.sku && (
             <p className="text-sm text-destructive">{errors.sku.message}</p>
           )}
@@ -298,7 +323,7 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
                 : ''
             }
             placeholder="—"
-            className="bg-muted text-muted-foreground pointer-events-none"
+            className="pointer-events-none bg-muted text-muted-foreground"
             tabIndex={-1}
           />
         </div>
@@ -338,7 +363,12 @@ export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFor
                 ? 'Create Item'
                 : 'Update Item'}
           </Button>
-          <Link href="/items">
+          <Link
+            href="/items"
+            onClick={() => {
+              if (isCreate) clearDraft();
+            }}
+          >
             <Button type="button" variant="outline">
               Cancel
             </Button>

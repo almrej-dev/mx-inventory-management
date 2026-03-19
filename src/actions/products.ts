@@ -8,6 +8,7 @@ import { checkCircularReference, explodeBom, calculateRecipeCost } from "@/lib/b
 import type { BomLine } from "@/lib/bom";
 import { gramsToMg, mgToGrams, centavosToPesos } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { humanError } from "@/lib/errors";
 
 async function fetchIngredientChanges(parentItemId: number) {
   const rows = await prisma.recipeIngredient.findMany({
@@ -60,6 +61,23 @@ export async function createProduct(
 
   const { ingredients } = parsed.data;
 
+  // Validate ingredients before the transaction to avoid timeouts
+  for (const ing of ingredients) {
+    const childItem = await prisma.item.findUnique({ where: { id: ing.childItemId } });
+    if (!childItem) {
+      return { error: { _form: [`Ingredient item not found`] } };
+    }
+    if (childItem.type === "FINISHED") {
+      return {
+        error: {
+          _form: [
+            "Finished products cannot be used as ingredients. Only Raw Material, Semi-Finished, and Packaging items are allowed.",
+          ],
+        },
+      };
+    }
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // Create the product item
@@ -74,21 +92,11 @@ export async function createProduct(
         },
       });
 
-      // Check circular references and validate ingredients
+      // Check circular references (uses item.id created above)
       for (const ing of ingredients) {
         const isCircular = await checkCircularReference(item.id, ing.childItemId);
         if (isCircular) {
           throw new Error("Circular recipe detected: this ingredient would create a cycle");
-        }
-
-        const childItem = await tx.item.findUnique({ where: { id: ing.childItemId } });
-        if (!childItem) {
-          throw new Error(`Ingredient item ${ing.childItemId} not found`);
-        }
-        if (childItem.type === "FINISHED") {
-          throw new Error(
-            "Finished products cannot be used as ingredients. Only Raw Material, Semi-Finished, and Packaging items are allowed."
-          );
         }
       }
 
@@ -103,7 +111,7 @@ export async function createProduct(
       });
 
       return item;
-    });
+    }, { timeout: 15000 });
 
     try {
       const changes = await fetchIngredientChanges(result.id);
@@ -129,7 +137,7 @@ export async function createProduct(
   } catch (err) {
     return {
       error: {
-        _form: [err instanceof Error ? err.message : "Failed to create product"],
+        _form: [humanError(err, "Failed to create product")],
       },
     };
   }
@@ -231,7 +239,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
       });
 
       return item;
-    });
+    }, { timeout: 15000 });
 
     try {
       const newIngredients = await fetchIngredientChanges(parentItemId);
@@ -264,9 +272,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
   } catch (err) {
     return {
       error: {
-        _form: [
-          err instanceof Error ? err.message : "Failed to update product",
-        ],
+        _form: [humanError(err, "Failed to update product")],
       },
     };
   }
@@ -318,7 +324,7 @@ export async function deleteProduct(parentItemId: number) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to delete product",
+      error: humanError(err, "Failed to delete product"),
     };
   }
 }
@@ -409,7 +415,7 @@ export async function getProducts(type?: "FINISHED" | "SEMI_FINISHED"): Promise<
     return { products };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to fetch products",
+      error: humanError(err, "Failed to fetch products"),
     };
   }
 }
@@ -503,7 +509,7 @@ export async function getProductBom(parentItemId: number): Promise<{
     };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to compute BOM",
+      error: humanError(err, "Failed to compute BOM"),
     };
   }
 }

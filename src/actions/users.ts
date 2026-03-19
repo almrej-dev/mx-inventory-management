@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { userSchema, editUserSchema } from "@/schemas/user";
+import { humanError } from "@/lib/errors";
 
 function createServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,7 +73,7 @@ export async function createUser(rawData: unknown) {
       await supabase.auth.admin.deleteUser(userId).catch(() => {});
     }
     return {
-      error: err instanceof Error ? err.message : "Failed to create user",
+      error: humanError(err, "Failed to create user"),
     };
   }
 }
@@ -134,7 +135,7 @@ export async function listUsers(): Promise<{
     return { users };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to list users",
+      error: humanError(err, "Failed to list users"),
     };
   }
 }
@@ -205,7 +206,7 @@ export async function deleteUser(
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to delete user",
+      error: humanError(err, "Failed to delete user"),
     };
   }
 }

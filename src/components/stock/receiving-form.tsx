@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { receiveStockBatch } from "@/actions/stock";
-import { mgToGrams } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { ArrowUp, ArrowDown, ArrowUpDown, Search } from "lucide-react";
-import type { ItemTypeValue } from "@/types";
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { receiveStockBatch } from '@/actions/stock';
+import { mgToGrams } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ArrowUp, ArrowDown, ArrowUpDown, Search } from 'lucide-react';
+import type { ItemTypeValue } from '@/types';
 
 interface ItemOption {
   id: number;
@@ -26,9 +26,9 @@ interface ReceivingFormProps {
   items: ItemOption[];
 }
 
-type ItemTypeFilter = "ALL" | ItemTypeValue;
-type SortColumn = "name" | "type" | "costPerCarton" | "systemStock";
-type SortDirection = "asc" | "desc";
+type ItemTypeFilter = 'ALL' | ItemTypeValue;
+type SortColumn = 'name' | 'type' | 'costPerCarton' | 'systemStock';
+type SortDirection = 'asc' | 'desc';
 
 interface RowData {
   quantity: string;
@@ -36,63 +36,110 @@ interface RowData {
 }
 
 function storageToDisplay(stockQty: number, unitType: string): number {
-  if (unitType === "pcs") return stockQty;
+  if (unitType === 'pcs') return stockQty;
   return parseFloat(mgToGrams(stockQty));
 }
 
 function unitLabel(unitType: string): string {
-  return unitType === "pcs" ? "pcs" : "g";
+  return unitType === 'pcs' ? 'pcs' : 'g';
 }
 
 function formatType(type: ItemTypeValue): string {
   return type
-    .replace(/_/g, " ")
+    .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function loadReceivingDraft(): { rows: Record<number, RowData>; notes: string } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('mx-draft:stock-receiving');
+    return raw ? (JSON.parse(raw) as { rows: Record<number, RowData>; notes: string }) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ReceivingForm({ items }: ReceivingFormProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
 
   const [rows, setRows] = useState<Record<number, RowData>>({});
-  const [notes, setNotes] = useState("");
-  const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [notes, setNotes] = useState('');
+
+  // Restore draft after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const saved = loadReceivingDraft();
+    if (saved) {
+      setRows(saved.rows);
+      setNotes(saved.notes);
+    }
+  }, []);
+  const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [submitStatus, setSubmitStatus] = useState<{
-    type: "success" | "error";
+    type: 'success' | 'error';
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
 
+  // Draft persistence
+  const DRAFT_KEY = 'mx-draft:stock-receiving';
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const persistDraft = useCallback(
+    (r: Record<number, RowData>, n: string) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({ rows: r, notes: n }));
+        } catch { /* ignore */ }
+      }, 300);
+    },
+    []
+  );
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  const clearDraft = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+  }, []);
+
   function updateRow(itemId: number, field: keyof RowData, value: string) {
     setRows((prev) => {
-      const existing = prev[itemId] ?? { quantity: "", date: today };
-      return { ...prev, [itemId]: { ...existing, [field]: value } };
+      const next = {
+        ...prev,
+        [itemId]: {
+          quantity: prev[itemId]?.quantity ?? '',
+          date: prev[itemId]?.date ?? today,
+          [field]: value
+        }
+      };
+      persistDraft(next, notes);
+      return next;
     });
   }
 
   function handleSort(column: SortColumn) {
     if (sortColumn === column) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
       } else {
         setSortColumn(null);
-        setSortDirection("asc");
+        setSortDirection('asc');
       }
     } else {
       setSortColumn(column);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   }
 
   const filteredItems = useMemo(() => {
     let result = items;
 
-    if (typeFilter !== "ALL") {
+    if (typeFilter !== 'ALL') {
       result = result.filter((item) => item.type === typeFilter);
     }
 
@@ -109,20 +156,20 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
       result = [...result].sort((a, b) => {
         let cmp = 0;
         switch (sortColumn) {
-          case "name":
+          case 'name':
             cmp = a.name.localeCompare(b.name);
             break;
-          case "type":
+          case 'type':
             cmp = a.type.localeCompare(b.type);
             break;
-          case "costPerCarton":
+          case 'costPerCarton':
             cmp = a.costPerCartonCentavos - b.costPerCartonCentavos;
             break;
-          case "systemStock":
+          case 'systemStock':
             cmp = a.stockQty - b.stockQty;
             break;
         }
-        return sortDirection === "desc" ? -cmp : cmp;
+        return sortDirection === 'desc' ? -cmp : cmp;
       });
     }
 
@@ -147,14 +194,14 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
   const entryCount = useMemo(() => {
     return items.filter((item) => {
       const qty = rows[item.id]?.quantity;
-      return qty !== undefined && qty !== "" && parseFloat(qty) > 0;
+      return qty !== undefined && qty !== '' && parseFloat(qty) > 0;
     }).length;
   }, [rows, items]);
 
   const totalCost = useMemo(() => {
     let total = 0;
     for (const item of items) {
-      const qty = parseFloat(rows[item.id]?.quantity ?? "");
+      const qty = parseFloat(rows[item.id]?.quantity ?? '');
       if (!qty || qty <= 0) continue;
       const costPesos = item.costPerCartonCentavos / 100;
       total += qty * costPesos;
@@ -169,7 +216,7 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
     const entries = items
       .filter((item) => {
         const qty = rows[item.id]?.quantity;
-        return qty !== undefined && qty !== "" && parseFloat(qty) > 0;
+        return qty !== undefined && qty !== '' && parseFloat(qty) > 0;
       })
       .map((item) => {
         const row = rows[item.id];
@@ -177,15 +224,15 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
           itemId: item.id,
           quantityCartons: parseFloat(row.quantity),
           receivedDate: row.date || today,
-          costPesos: item.costPerCartonCentavos / 100,
+          costPesos: item.costPerCartonCentavos / 100
         };
       })
       .filter((e) => !isNaN(e.quantityCartons));
 
     if (entries.length === 0) {
       setSubmitStatus({
-        type: "error",
-        message: "Please enter a quantity for at least one item.",
+        type: 'error',
+        message: 'Please enter a quantity for at least one item.'
       });
       return;
     }
@@ -195,23 +242,24 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
     try {
       const result = await receiveStockBatch({
         entries,
-        notes: notes || undefined,
+        notes: notes || undefined
       });
 
       if (result.error) {
-        setSubmitStatus({ type: "error", message: result.error });
+        setSubmitStatus({ type: 'error', message: result.error });
       } else {
         setSubmitStatus({
-          type: "success",
-          message: result.message ?? "Stock received successfully.",
+          type: 'success',
+          message: result.message ?? 'Stock received successfully.'
         });
         setRows({});
-        setNotes("");
+        setNotes('');
+        clearDraft();
       }
     } catch {
       setSubmitStatus({
-        type: "error",
-        message: "An unexpected error occurred.",
+        type: 'error',
+        message: 'An unexpected error occurred.'
       });
     } finally {
       setIsSubmitting(false);
@@ -219,11 +267,11 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
   }
 
   const itemTypeOptions: { value: ItemTypeFilter; label: string }[] = [
-    { value: "ALL", label: "All Types" },
-    { value: "RAW_MATERIAL", label: "Raw Material" },
-    { value: "SEMI_FINISHED", label: "Semi-Finished" },
-    { value: "FINISHED", label: "Finished" },
-    { value: "PACKAGING", label: "Packaging" },
+    { value: 'ALL', label: 'All Types' },
+    { value: 'RAW_MATERIAL', label: 'Raw Material' },
+    { value: 'SEMI_FINISHED', label: 'Semi-Finished' },
+    { value: 'FINISHED', label: 'Finished' },
+    { value: 'PACKAGING', label: 'Packaging' }
   ];
 
   return (
@@ -232,9 +280,9 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
       {submitStatus && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
-            submitStatus.type === "success"
-              ? "border-success/30 bg-success-muted text-success-muted-foreground"
-              : "border-destructive/30 bg-destructive-muted text-destructive-muted-foreground"
+            submitStatus.type === 'success'
+              ? 'border-success/30 bg-success-muted text-success-muted-foreground'
+              : 'border-destructive/30 bg-destructive-muted text-destructive-muted-foreground'
           }`}
         >
           {submitStatus.message}
@@ -282,7 +330,7 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
           </svg>
         </div>
         <span className="text-sm text-muted-foreground">
-          {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}{" "}
+          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}{' '}
           shown
         </span>
       </div>
@@ -295,19 +343,19 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("name")}
+                    onClick={() => handleSort('name')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     Item
-                    {sortColumn === "name" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'name' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -320,12 +368,12 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                 <th className="px-4 py-3 text-left font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("type")}
+                    onClick={() => handleSort('type')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     Type
-                    {sortColumn === "type" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'type' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -338,12 +386,12 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                 <th className="px-4 py-3 text-right font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("costPerCarton")}
+                    onClick={() => handleSort('costPerCarton')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     Cost/Carton (PHP)
-                    {sortColumn === "costPerCarton" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'costPerCarton' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -356,12 +404,12 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                 <th className="px-4 py-3 text-right font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("systemStock")}
+                    onClick={() => handleSort('systemStock')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     System Stock
-                    {sortColumn === "systemStock" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'systemStock' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -382,7 +430,7 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
             <tbody>
               {paginatedItems.map((item) => {
                 const row = rows[item.id];
-                const quantity = row?.quantity ?? "";
+                const quantity = row?.quantity ?? '';
                 const date = row?.date ?? today;
                 const costPesos = item.costPerCartonCentavos / 100;
 
@@ -405,12 +453,17 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                     <td className="px-4 py-3 text-right font-mono">
                       {costPesos.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
+                        maximumFractionDigits: 2
                       })}
                     </td>
                     <td className="px-4 py-3 text-right font-mono">
-                      {storageToDisplay(item.stockQty, item.unitType).toLocaleString()}{" "}
-                      <span className="text-xs text-muted-foreground">{unitLabel(item.unitType)}</span>
+                      {storageToDisplay(
+                        item.stockQty,
+                        item.unitType
+                      ).toLocaleString()}{' '}
+                      <span className="text-xs text-muted-foreground">
+                        {unitLabel(item.unitType)}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <input
@@ -419,10 +472,10 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                         min="1"
                         value={quantity}
                         onChange={(e) =>
-                          updateRow(item.id, "quantity", e.target.value)
+                          updateRow(item.id, 'quantity', e.target.value)
                         }
                         placeholder="0"
-                        className="w-24 rounded-md border border-input bg-transparent px-2.5 py-1 text-right text-sm font-mono outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                        className="w-24 rounded-md border border-input bg-transparent px-2.5 py-1 text-right font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -430,7 +483,7 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
                         type="date"
                         value={date}
                         onChange={(e) =>
-                          updateRow(item.id, "date", e.target.value)
+                          updateRow(item.id, 'date', e.target.value)
                         }
                         className="rounded-md border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                       />
@@ -475,18 +528,18 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
             <span className="font-medium text-foreground">
-              {entryCount} item{entryCount !== 1 ? "s" : ""}
-            </span>{" "}
+              {entryCount} item{entryCount !== 1 ? 's' : ''}
+            </span>{' '}
             to receive.
           </p>
           {totalCost > 0 && (
             <p>
-              Total cost:{" "}
+              Total cost:{' '}
               <span className="font-medium text-foreground">
-                PHP{" "}
+                PHP{' '}
                 {totalCost.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
+                  maximumFractionDigits: 2
                 })}
               </span>
             </p>
@@ -501,14 +554,14 @@ export function ReceivingForm({ items }: ReceivingFormProps) {
           id="notes"
           placeholder="Supplier name, invoice number, etc."
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={(e) => { setNotes(e.target.value); persistDraft(rows, e.target.value); }}
           className="max-w-lg"
         />
       </div>
 
       {/* Submit */}
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Recording..." : "Record Receiving"}
+        {isSubmitting ? 'Recording...' : 'Record Receiving'}
       </Button>
     </form>
   );

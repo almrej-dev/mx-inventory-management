@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { recordWasteBatch } from "@/actions/stock";
-import { mgToGrams } from "@/lib/utils";
-import { WASTE_REASON_CODES } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { ArrowUp, ArrowDown, ArrowUpDown, Search } from "lucide-react";
-import type { ItemTypeValue } from "@/types";
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { recordWasteBatch } from '@/actions/stock';
+import { mgToGrams } from '@/lib/utils';
+import { WASTE_REASON_CODES } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ArrowUp, ArrowDown, ArrowUpDown, Search } from 'lucide-react';
+import type { ItemTypeValue } from '@/types';
 
 interface WasteItem {
   id: number;
@@ -24,25 +24,25 @@ interface WasteFormProps {
   items: WasteItem[];
 }
 
-type ItemTypeFilter = "ALL" | ItemTypeValue;
-type SortColumn = "name" | "type" | "stockQty";
-type SortDirection = "asc" | "desc";
+type ItemTypeFilter = 'ALL' | ItemTypeValue;
+type SortColumn = 'name' | 'type' | 'stockQty';
+type SortDirection = 'asc' | 'desc';
 
 /** Convert storage units to display quantity. */
 function storageToDisplay(stockQty: number, unitType: string): number {
-  if (unitType === "pcs") return stockQty;
+  if (unitType === 'pcs') return stockQty;
   return parseFloat(mgToGrams(stockQty));
 }
 
 /** Unit label for an item. */
 function unitLabel(unitType: string): string {
-  return unitType === "pcs" ? "pcs" : "g";
+  return unitType === 'pcs' ? 'pcs' : 'g';
 }
 
 /** Format a type value for readable display. */
 function formatType(type: ItemTypeValue): string {
   return type
-    .replace(/_/g, " ")
+    .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -52,39 +52,78 @@ interface WasteEntry {
   reasonCode: string;
 }
 
+function loadWasteDraft(): { entries: Record<number, WasteEntry>; notes: string } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('mx-draft:stock-waste');
+    return raw ? (JSON.parse(raw) as { entries: Record<number, WasteEntry>; notes: string }) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function WasteForm({ items }: WasteFormProps) {
   const [entries, setEntries] = useState<Record<number, WasteEntry>>({});
-  const [notes, setNotes] = useState("");
-  const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>("name");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [notes, setNotes] = useState('');
+
+  // Restore draft after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const saved = loadWasteDraft();
+    if (saved) {
+      setEntries(saved.entries);
+      setNotes(saved.notes);
+    }
+  }, []);
+  const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [submitStatus, setSubmitStatus] = useState<{
-    type: "success" | "error";
+    type: 'success' | 'error';
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
 
+  // Draft persistence
+  const DRAFT_KEY = 'mx-draft:stock-waste';
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const persistDraft = useCallback(
+    (e: Record<number, WasteEntry>, n: string) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({ entries: e, notes: n }));
+        } catch { /* ignore */ }
+      }, 300);
+    },
+    []
+  );
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  const clearDraft = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+  }, []);
+
   function handleSort(column: SortColumn) {
     if (sortColumn === column) {
-      if (sortDirection === "asc") {
-        setSortDirection("desc");
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
       } else {
         setSortColumn(null);
-        setSortDirection("asc");
+        setSortDirection('asc');
       }
     } else {
       setSortColumn(column);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   }
 
   const filteredItems = useMemo(() => {
     let result = items;
 
-    if (typeFilter !== "ALL") {
+    if (typeFilter !== 'ALL') {
       result = result.filter((item) => item.type === typeFilter);
     }
 
@@ -101,19 +140,19 @@ export function WasteForm({ items }: WasteFormProps) {
       result = [...result].sort((a, b) => {
         let cmp = 0;
         switch (sortColumn) {
-          case "name":
+          case 'name':
             cmp = a.name.localeCompare(b.name);
             break;
-          case "type":
+          case 'type':
             cmp = a.type.localeCompare(b.type);
             break;
-          case "stockQty":
+          case 'stockQty':
             cmp =
               storageToDisplay(a.stockQty, a.unitType) -
               storageToDisplay(b.stockQty, b.unitType);
             break;
         }
-        return sortDirection === "desc" ? -cmp : cmp;
+        return sortDirection === 'desc' ? -cmp : cmp;
       });
     }
 
@@ -140,14 +179,18 @@ export function WasteForm({ items }: WasteFormProps) {
     field: keyof WasteEntry,
     value: string
   ) {
-    setEntries((prev) => ({
-      ...prev,
-      [itemId]: {
-        quantity: prev[itemId]?.quantity ?? "",
-        reasonCode: prev[itemId]?.reasonCode ?? "",
-        [field]: value,
-      },
-    }));
+    setEntries((prev) => {
+      const next = {
+        ...prev,
+        [itemId]: {
+          quantity: prev[itemId]?.quantity ?? '',
+          reasonCode: prev[itemId]?.reasonCode ?? '',
+          [field]: value
+        }
+      };
+      persistDraft(next, notes);
+      return next;
+    });
   }
 
   // Count items that have a valid waste entry (both quantity and reason filled)
@@ -156,7 +199,7 @@ export function WasteForm({ items }: WasteFormProps) {
       const entry = entries[item.id];
       if (!entry) return false;
       const qty = parseFloat(entry.quantity);
-      return !isNaN(qty) && qty > 0 && entry.reasonCode !== "";
+      return !isNaN(qty) && qty > 0 && entry.reasonCode !== '';
     }).length;
   }, [entries, items]);
 
@@ -166,8 +209,10 @@ export function WasteForm({ items }: WasteFormProps) {
       const entry = entries[item.id];
       if (!entry) return false;
       const hasQty =
-        entry.quantity !== "" && !isNaN(parseFloat(entry.quantity)) && parseFloat(entry.quantity) > 0;
-      const hasReason = entry.reasonCode !== "";
+        entry.quantity !== '' &&
+        !isNaN(parseFloat(entry.quantity)) &&
+        parseFloat(entry.quantity) > 0;
+      const hasReason = entry.reasonCode !== '';
       return (hasQty && !hasReason) || (!hasQty && hasReason);
     }).length;
   }, [entries, items]);
@@ -178,8 +223,8 @@ export function WasteForm({ items }: WasteFormProps) {
 
     if (incompleteCount > 0) {
       setSubmitStatus({
-        type: "error",
-        message: `${incompleteCount} item${incompleteCount !== 1 ? "s have" : " has"} incomplete entries. Fill in both quantity and reason, or clear the row.`,
+        type: 'error',
+        message: `${incompleteCount} item${incompleteCount !== 1 ? 's have' : ' has'} incomplete entries. Fill in both quantity and reason, or clear the row.`
       });
       return;
     }
@@ -190,18 +235,18 @@ export function WasteForm({ items }: WasteFormProps) {
         const entry = entries[item.id];
         if (!entry) return false;
         const qty = parseFloat(entry.quantity);
-        return !isNaN(qty) && qty > 0 && entry.reasonCode !== "";
+        return !isNaN(qty) && qty > 0 && entry.reasonCode !== '';
       })
       .map((item) => ({
         itemId: item.id,
         quantity: parseFloat(entries[item.id].quantity),
-        reasonCode: entries[item.id].reasonCode,
+        reasonCode: entries[item.id].reasonCode
       }));
 
     if (validEntries.length === 0) {
       setSubmitStatus({
-        type: "error",
-        message: "Please enter at least one waste record (quantity + reason).",
+        type: 'error',
+        message: 'Please enter at least one waste record (quantity + reason).'
       });
       return;
     }
@@ -211,23 +256,24 @@ export function WasteForm({ items }: WasteFormProps) {
     try {
       const result = await recordWasteBatch({
         entries: validEntries,
-        notes: notes || undefined,
+        notes: notes || undefined
       });
 
       if (result.error) {
-        setSubmitStatus({ type: "error", message: result.error });
+        setSubmitStatus({ type: 'error', message: result.error });
       } else {
         setSubmitStatus({
-          type: "success",
-          message: result.message ?? "Waste recorded successfully.",
+          type: 'success',
+          message: result.message ?? 'Waste recorded successfully.'
         });
         setEntries({});
-        setNotes("");
+        setNotes('');
+        clearDraft();
       }
     } catch {
       setSubmitStatus({
-        type: "error",
-        message: "An unexpected error occurred.",
+        type: 'error',
+        message: 'An unexpected error occurred.'
       });
     } finally {
       setIsSubmitting(false);
@@ -235,11 +281,11 @@ export function WasteForm({ items }: WasteFormProps) {
   }
 
   const itemTypeOptions: { value: ItemTypeFilter; label: string }[] = [
-    { value: "ALL", label: "All Types" },
-    { value: "RAW_MATERIAL", label: "Raw Material" },
-    { value: "SEMI_FINISHED", label: "Semi-Finished" },
-    { value: "FINISHED", label: "Finished" },
-    { value: "PACKAGING", label: "Packaging" },
+    { value: 'ALL', label: 'All Types' },
+    { value: 'RAW_MATERIAL', label: 'Raw Material' },
+    { value: 'SEMI_FINISHED', label: 'Semi-Finished' },
+    { value: 'FINISHED', label: 'Finished' },
+    { value: 'PACKAGING', label: 'Packaging' }
   ];
 
   return (
@@ -248,9 +294,9 @@ export function WasteForm({ items }: WasteFormProps) {
       {submitStatus && (
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
-            submitStatus.type === "success"
-              ? "border-success/30 bg-success-muted text-success-muted-foreground"
-              : "border-destructive/30 bg-destructive-muted text-destructive-muted-foreground"
+            submitStatus.type === 'success'
+              ? 'border-success/30 bg-success-muted text-success-muted-foreground'
+              : 'border-destructive/30 bg-destructive-muted text-destructive-muted-foreground'
           }`}
         >
           {submitStatus.message}
@@ -298,7 +344,7 @@ export function WasteForm({ items }: WasteFormProps) {
           </svg>
         </div>
         <span className="text-sm text-muted-foreground">
-          {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}{" "}
+          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}{' '}
           shown
         </span>
       </div>
@@ -311,19 +357,19 @@ export function WasteForm({ items }: WasteFormProps) {
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("name")}
+                    onClick={() => handleSort('name')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     Item
-                    {sortColumn === "name" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'name' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -336,12 +382,12 @@ export function WasteForm({ items }: WasteFormProps) {
                 <th className="px-4 py-3 text-left font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("type")}
+                    onClick={() => handleSort('type')}
                     className="inline-flex items-center gap-1 hover:text-foreground"
                   >
                     Type
-                    {sortColumn === "type" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'type' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -354,12 +400,12 @@ export function WasteForm({ items }: WasteFormProps) {
                 <th className="px-4 py-3 text-right font-medium">
                   <button
                     type="button"
-                    onClick={() => handleSort("stockQty")}
-                    className="inline-flex items-center gap-1 justify-end w-full hover:text-foreground"
+                    onClick={() => handleSort('stockQty')}
+                    className="inline-flex w-full items-center justify-end gap-1 hover:text-foreground"
                   >
                     System Stock
-                    {sortColumn === "stockQty" ? (
-                      sortDirection === "asc" ? (
+                    {sortColumn === 'stockQty' ? (
+                      sortDirection === 'asc' ? (
                         <ArrowUp className="h-3 w-3" />
                       ) : (
                         <ArrowDown className="h-3 w-3" />
@@ -369,9 +415,7 @@ export function WasteForm({ items }: WasteFormProps) {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  Waste Qty
-                </th>
+                <th className="px-4 py-3 text-right font-medium">Waste Qty</th>
                 <th className="px-4 py-3 text-left font-medium">Reason</th>
               </tr>
             </thead>
@@ -385,16 +429,18 @@ export function WasteForm({ items }: WasteFormProps) {
                 const entry = entries[item.id];
                 const hasQty =
                   entry?.quantity !== undefined &&
-                  entry.quantity !== "" &&
+                  entry.quantity !== '' &&
                   !isNaN(parseFloat(entry.quantity)) &&
                   parseFloat(entry.quantity) > 0;
-                const hasReason = entry?.reasonCode !== undefined && entry.reasonCode !== "";
-                const isIncomplete = (hasQty && !hasReason) || (!hasQty && hasReason);
+                const hasReason =
+                  entry?.reasonCode !== undefined && entry.reasonCode !== '';
+                const isIncomplete =
+                  (hasQty && !hasReason) || (!hasQty && hasReason);
 
                 return (
                   <tr
                     key={item.id}
-                    className={`border-b last:border-0 hover:bg-muted/30 ${isIncomplete ? "bg-destructive-muted/30" : ""}`}
+                    className={`border-b last:border-0 hover:bg-muted/30 ${isIncomplete ? 'bg-destructive-muted/30' : ''}`}
                   >
                     <td className="px-4 py-3">
                       <div>
@@ -415,12 +461,12 @@ export function WasteForm({ items }: WasteFormProps) {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={entry?.quantity ?? ""}
+                        value={entry?.quantity ?? ''}
                         onChange={(e) =>
-                          handleEntryChange(item.id, "quantity", e.target.value)
+                          handleEntryChange(item.id, 'quantity', e.target.value)
                         }
                         placeholder="0"
-                        className="w-28 rounded-md border border-input bg-transparent px-2.5 py-1 text-right text-sm font-mono outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                        className="w-28 rounded-md border border-input bg-transparent px-2.5 py-1 text-right font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                       />
                       <span className="ml-1 inline-block w-6 text-left text-xs text-muted-foreground">
                         {unit}
@@ -429,11 +475,11 @@ export function WasteForm({ items }: WasteFormProps) {
                     <td className="px-4 py-3">
                       <div className="relative">
                         <select
-                          value={entry?.reasonCode ?? ""}
+                          value={entry?.reasonCode ?? ''}
                           onChange={(e) =>
                             handleEntryChange(
                               item.id,
-                              "reasonCode",
+                              'reasonCode',
                               e.target.value
                             )
                           }
@@ -499,8 +545,8 @@ export function WasteForm({ items }: WasteFormProps) {
       {entryCount > 0 && (
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">
-            {entryCount} item{entryCount !== 1 ? "s" : ""}
-          </span>{" "}
+            {entryCount} item{entryCount !== 1 ? 's' : ''}
+          </span>{' '}
           will be recorded as waste.
         </p>
       )}
@@ -512,14 +558,14 @@ export function WasteForm({ items }: WasteFormProps) {
           id="notes"
           placeholder="Additional details about this waste record"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={(e) => { setNotes(e.target.value); persistDraft(entries, e.target.value); }}
           className="max-w-lg"
         />
       </div>
 
       {/* Submit */}
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Recording..." : "Record Waste"}
+        {isSubmitting ? 'Recording...' : 'Record Waste'}
       </Button>
     </form>
   );

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { receivingSchema, batchReceivingSchema, wasteSchema, batchWasteSchema, reconciliationSchema } from "@/schemas/stock";
 import { pesosToCentavos, gramsToMg } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { humanError } from "@/lib/errors";
 
 /**
  * Record incoming stock for an item.
@@ -86,7 +87,7 @@ export async function receiveStock(rawData: unknown) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to record receiving",
+      error: humanError(err, "Failed to record receiving"),
     };
   }
 }
@@ -117,55 +118,45 @@ export async function receiveStockBatch(rawData: unknown) {
 
     const batchRefId = `RCV-${Date.now()}`;
 
-    type TxOp =
-      | ReturnType<typeof prisma.inventoryTransaction.create>
-      | ReturnType<typeof prisma.item.update>;
+    // Pre-compute all entries before entering the transaction
+    const prepared = data.entries
+      .map((entry) => {
+        const item = itemMap.get(entry.itemId);
+        if (!item) return null;
+        const calculatedQty = item.unitType === "pcs"
+          ? entry.quantityCartons * item.cartonSize
+          : entry.quantityCartons * item.cartonSize * item.unitWeightMg;
+        const totalCostCentavos = pesosToCentavos(entry.costPesos) * entry.quantityCartons;
+        return { itemId: entry.itemId, calculatedQty, totalCostCentavos, costCentavos: pesosToCentavos(entry.costPesos) };
+      })
+      .filter((e) => e !== null);
 
-    const ops: TxOp[] = [];
+    if (prepared.length === 0) {
+      return { error: "No valid items to receive." };
+    }
 
-    for (const entry of data.entries) {
-      const item = itemMap.get(entry.itemId);
-      if (!item) continue;
-
-      let calculatedQty: number;
-      if (item.unitType === "pcs") {
-        calculatedQty = entry.quantityCartons * item.cartonSize;
-      } else {
-        calculatedQty = entry.quantityCartons * item.cartonSize * item.unitWeightMg;
-      }
-
-      const totalCostCentavos = pesosToCentavos(entry.costPesos) * entry.quantityCartons;
-
-      ops.push(
-        prisma.inventoryTransaction.create({
+    await prisma.$transaction(async (tx) => {
+      for (const entry of prepared) {
+        await tx.inventoryTransaction.create({
           data: {
             itemId: entry.itemId,
             type: "RECEIVE",
-            quantity: calculatedQty,
-            costCentavos: totalCostCentavos,
+            quantity: entry.calculatedQty,
+            costCentavos: entry.totalCostCentavos,
             notes: data.notes || null,
             createdBy: user.id,
             referenceId: batchRefId,
           },
-        })
-      );
-
-      ops.push(
-        prisma.item.update({
+        });
+        await tx.item.update({
           where: { id: entry.itemId },
           data: {
-            stockQty: { increment: calculatedQty },
-            costCentavos: pesosToCentavos(entry.costPesos),
+            stockQty: { increment: entry.calculatedQty },
+            costCentavos: entry.costCentavos,
           },
-        })
-      );
-    }
-
-    if (ops.length === 0) {
-      return { error: "No valid items to receive." };
-    }
-
-    await prisma.$transaction(ops);
+        });
+      }
+    }, { timeout: 30000 });
 
     revalidatePath("/stock/receiving");
     revalidatePath("/items");
@@ -177,7 +168,7 @@ export async function receiveStockBatch(rawData: unknown) {
     };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to record receiving",
+      error: humanError(err, "Failed to record receiving"),
     };
   }
 }
@@ -255,7 +246,7 @@ export async function recordWaste(rawData: unknown) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to record waste",
+      error: humanError(err, "Failed to record waste"),
     };
   }
 }
@@ -290,48 +281,38 @@ export async function recordWasteBatch(rawData: unknown) {
 
     const batchRefId = `WST-${Date.now()}`;
 
-    type TxOp =
-      | ReturnType<typeof prisma.inventoryTransaction.create>
-      | ReturnType<typeof prisma.item.update>;
+    // Pre-compute all entries before entering the transaction
+    const prepared = data.entries
+      .map((entry) => {
+        const item = itemMap.get(entry.itemId);
+        if (!item) return null;
+        const wasteQty = item.unitType === "pcs" ? entry.quantity : gramsToMg(entry.quantity);
+        return { itemId: entry.itemId, wasteQty, reasonCode: entry.reasonCode };
+      })
+      .filter((e) => e !== null);
 
-    const ops: TxOp[] = [];
+    if (prepared.length === 0) {
+      return { error: "No valid items to record." };
+    }
 
-    for (const entry of data.entries) {
-      const item = itemMap.get(entry.itemId);
-      if (!item) continue;
-
-      // Convert user-friendly units to storage units
-      const wasteQty =
-        item.unitType === "pcs" ? entry.quantity : gramsToMg(entry.quantity);
-
-      ops.push(
-        prisma.inventoryTransaction.create({
+    await prisma.$transaction(async (tx) => {
+      for (const entry of prepared) {
+        await tx.inventoryTransaction.create({
           data: {
             itemId: entry.itemId,
             type: "WASTE",
-            quantity: -wasteQty, // NEGATIVE -- waste removes stock
+            quantity: -entry.wasteQty,
             referenceId: batchRefId,
             notes: `[${entry.reasonCode}]${data.notes ? " " + data.notes : ""}`,
             createdBy: user.id,
           },
-        })
-      );
-
-      ops.push(
-        prisma.item.update({
+        });
+        await tx.item.update({
           where: { id: entry.itemId },
-          data: {
-            stockQty: { decrement: wasteQty },
-          },
-        })
-      );
-    }
-
-    if (ops.length === 0) {
-      return { error: "No valid items to record." };
-    }
-
-    await prisma.$transaction(ops);
+          data: { stockQty: { decrement: entry.wasteQty } },
+        });
+      }
+    }, { timeout: 30000 });
 
     revalidatePath("/stock/waste");
     revalidatePath("/items");
@@ -344,7 +325,7 @@ export async function recordWasteBatch(rawData: unknown) {
     };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to record waste",
+      error: humanError(err, "Failed to record waste"),
     };
   }
 }
@@ -445,7 +426,7 @@ export async function getActiveItems() {
     return { items };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to load items",
+      error: humanError(err, "Failed to load items"),
       items: [],
     };
   }
@@ -476,7 +457,7 @@ export async function getItemsForReconciliation() {
     return { items };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to load items",
+      error: humanError(err, "Failed to load items"),
       items: [],
     };
   }
@@ -518,61 +499,51 @@ export async function submitReconciliation(rawData: unknown) {
 
     const itemMap = new Map(items.map((i) => [i.id, i]));
 
-    type TxOp =
-      | ReturnType<typeof prisma.inventoryTransaction.create>
-      | ReturnType<typeof prisma.item.update>;
-
-    const ops: TxOp[] = [];
-    let adjustedCount = 0;
+    // Pre-compute adjustments before entering the transaction
+    const adjustments: { itemId: number; variance: number; physicalStorageQty: number }[] = [];
 
     for (const count of data.counts) {
       const item = itemMap.get(count.itemId);
       if (!item) continue;
 
-      // Convert user-entered display units to storage units
-      // pcs items: user enters pieces -- already correct
-      // grams items: user enters grams -- convert to milligrams
       const physicalStorageQty =
         item.unitType === "pcs"
           ? count.physicalCount
           : gramsToMg(count.physicalCount);
 
-      // Calculate variance (positive = surplus, negative = shortage)
       const variance = physicalStorageQty - item.stockQty;
-
-      // Skip items with no discrepancy
       if (variance === 0) continue;
 
-      adjustedCount++;
-
-      ops.push(
-        prisma.inventoryTransaction.create({
-          data: {
-            itemId: count.itemId,
-            type: "ADJUSTMENT",
-            quantity: variance,
-            referenceId: batchRefId,
-            notes: data.notes
-              ? "Reconciliation: " + data.notes
-              : "Physical count reconciliation",
-            createdBy: user.id,
-          },
-        })
-      );
-
-      ops.push(
-        prisma.item.update({
-          where: { id: count.itemId },
-          data: { stockQty: physicalStorageQty },
-        })
-      );
+      adjustments.push({ itemId: count.itemId, variance, physicalStorageQty });
     }
 
-    if (ops.length === 0) {
+    if (adjustments.length === 0) {
       return { success: true, message: "No discrepancies found." };
     }
 
-    await prisma.$transaction(ops);
+    const adjustedCount = adjustments.length;
+    const reconNotes = data.notes
+      ? "Reconciliation: " + data.notes
+      : "Physical count reconciliation";
+
+    await prisma.$transaction(async (tx) => {
+      for (const adj of adjustments) {
+        await tx.inventoryTransaction.create({
+          data: {
+            itemId: adj.itemId,
+            type: "ADJUSTMENT",
+            quantity: adj.variance,
+            referenceId: batchRefId,
+            notes: reconNotes,
+            createdBy: user.id,
+          },
+        });
+        await tx.item.update({
+          where: { id: adj.itemId },
+          data: { stockQty: adj.physicalStorageQty },
+        });
+      }
+    }, { timeout: 30000 });
 
     revalidatePath("/stock/reconciliation");
     revalidatePath("/items");
@@ -585,8 +556,7 @@ export async function submitReconciliation(rawData: unknown) {
     };
   } catch (err) {
     return {
-      error:
-        err instanceof Error ? err.message : "Failed to submit reconciliation",
+      error: humanError(err, "Failed to submit reconciliation"),
     };
   }
 }

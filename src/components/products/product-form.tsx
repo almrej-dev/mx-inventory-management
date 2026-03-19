@@ -1,10 +1,11 @@
 'use client';
 
-import { useTransition, useState, useEffect } from 'react';
+import { useTransition, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, type FieldPath } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { productSchema, type ProductFormData } from '@/schemas/product';
+import { useFormPersistence } from '@/hooks/use-form-persistence';
 import { createProduct, updateProduct } from '@/actions/products';
 import { ItemRow } from '@/components/products/item-row';
 import { Button } from '@/components/ui/button';
@@ -44,18 +45,88 @@ interface ProductFormEditProps {
 
 type ProductFormProps = ProductFormCreateProps | ProductFormEditProps;
 
+interface ProductDraftMeta {
+  productName?: string;
+  productSku?: string;
+}
+
+function getDraftKey(props: ProductFormProps): string {
+  if (props.mode === 'create') {
+    return `product-create-${props.productType.toLowerCase()}`;
+  }
+  return `product-edit-${(props as ProductFormEditProps).parentItemId}`;
+}
+
+function loadProductMeta(key: string): ProductDraftMeta {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(`mx-draft-meta:${key}`);
+    return raw ? (JSON.parse(raw) as ProductDraftMeta) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveProductMeta(key: string, meta: ProductDraftMeta) {
+  try {
+    localStorage.setItem(`mx-draft-meta:${key}`, JSON.stringify(meta));
+  } catch {
+    // ignore
+  }
+}
+
+function clearProductMeta(key: string) {
+  try {
+    localStorage.removeItem(`mx-draft-meta:${key}`);
+  } catch {
+    // ignore
+  }
+}
+
 export function ProductForm(props: ProductFormProps) {
   const { mode, ingredientItems, returnTo, onDirtyChange } = props;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const isCreate = mode === 'create';
+  const draftKey = getDraftKey(props);
 
-  const [productName, setProductName] = useState(
-    mode === 'edit' ? (props as ProductFormEditProps).productName : ''
+  // Create mode extra fields
+  const [productName, setProductName] = useState('');
+  const [productSku, setProductSku] = useState('');
+
+  // Restore product meta draft after hydration
+  useEffect(() => {
+    if (!isCreate) return;
+    const meta = loadProductMeta(draftKey);
+    if (meta.productName) setProductName(meta.productName);
+    if (meta.productSku) setProductSku(meta.productSku);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist productName/productSku changes
+  const metaTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const persistMeta = useCallback(
+    (name: string, sku: string) => {
+      if (!isCreate) return;
+      if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
+      metaTimerRef.current = setTimeout(() => saveProductMeta(draftKey, { productName: name, productSku: sku }), 300);
+    },
+    [isCreate, draftKey]
   );
-  const [productSku, setProductSku] = useState(
-    mode === 'edit' ? (props as ProductFormEditProps).productSku : ''
-  );
+  useEffect(() => () => { if (metaTimerRef.current) clearTimeout(metaTimerRef.current); }, []);
+
+  const createDefaults: ProductFormData = {
+    ingredients: [{ childItemId: 0, quantityGrams: NaN, quantityPieces: NaN }]
+  };
+
+  const form = useForm<ProductFormData>({
+    resolver: standardSchemaResolver(productSchema),
+    defaultValues:
+      mode === 'edit'
+        ? (props as ProductFormEditProps).defaultValues
+        : createDefaults
+  });
 
   const {
     register,
@@ -64,17 +135,15 @@ export function ProductForm(props: ProductFormProps) {
     watch,
     clearErrors,
     formState: { errors, isDirty }
-  } = useForm<ProductFormData>({
-    resolver: standardSchemaResolver(productSchema),
-    defaultValues:
-      mode === 'edit'
-        ? (props as ProductFormEditProps).defaultValues
-        : {
-            ingredients: [
-              { childItemId: 0, quantityGrams: NaN, quantityPieces: NaN }
-            ]
-          }
-  });
+  } = form;
+
+  const { clearDraft } = useFormPersistence(draftKey, form, isCreate);
+
+  function clearAllDrafts() {
+    clearDraft();
+    if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
+    clearProductMeta(draftKey);
+  }
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -106,6 +175,7 @@ export function ProductForm(props: ProductFormProps) {
         );
 
         if ('success' in result && result.success) {
+          clearAllDrafts();
           router.push(returnTo);
           return;
         }
@@ -175,26 +245,38 @@ export function ProductForm(props: ProductFormProps) {
       )}
 
       {/* Product Identity */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="productName">Product Name</Label>
-          <Input
-            id="productName"
-            placeholder="e.g. Chocolate Cake"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-          />
+      {mode === 'create' ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="productName">Product Name</Label>
+            <Input
+              id="productName"
+              placeholder="e.g. Chocolate Cake"
+              value={productName}
+              onChange={(e) => { setProductName(e.target.value); persistMeta(e.target.value, productSku); }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="productSku">SKU</Label>
+            <Input
+              id="productSku"
+              placeholder="e.g. FIN-001"
+              value={productSku}
+              onChange={(e) => { const v = e.target.value.toUpperCase(); setProductSku(v); persistMeta(productName, v); }}
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="productSku">SKU</Label>
-          <Input
-            id="productSku"
-            placeholder="e.g. FIN-001"
-            value={productSku}
-            onChange={(e) => setProductSku(e.target.value.toUpperCase())}
-          />
+      ) : (
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Product</p>
+          <p className="text-base font-semibold">
+            {(props as ProductFormEditProps).productName}{' '}
+            <span className="font-mono text-sm font-normal text-muted-foreground">
+              {(props as ProductFormEditProps).productSku}
+            </span>
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Items Section */}
       <div className="space-y-3">
@@ -255,7 +337,7 @@ export function ProductForm(props: ProductFormProps) {
               ? 'Create Product'
               : 'Update Product'}
         </Button>
-        <Link href={returnTo}>
+        <Link href={returnTo} onClick={() => { if (isCreate) clearAllDrafts(); }}>
           <Button type="button" variant="outline">
             Cancel
           </Button>

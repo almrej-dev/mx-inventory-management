@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { explodeBom } from "@/lib/bom";
 import { processSalesSchema } from "@/schemas/sales";
 import { revalidatePath } from "next/cache";
+import { humanError } from "@/lib/errors";
 
 /**
  * Process a batch of sales lines with automatic BOM-based inventory deduction.
@@ -137,7 +138,7 @@ export async function processSalesLines(rawData: unknown) {
       }
 
       return upload;
-    });
+    }, { timeout: 30000 });
 
     revalidatePath("/sales");
     revalidatePath("/items");
@@ -146,8 +147,7 @@ export async function processSalesLines(rawData: unknown) {
     return { success: true, uploadId: result.id };
   } catch (err) {
     return {
-      error:
-        err instanceof Error ? err.message : "Failed to process sales lines",
+      error: humanError(err, "Failed to process sales lines"),
     };
   }
 }
@@ -171,8 +171,7 @@ export async function getSalesUploads() {
     return { uploads };
   } catch (err) {
     return {
-      error:
-        err instanceof Error ? err.message : "Failed to load sales uploads",
+      error: humanError(err, "Failed to load sales uploads"),
       uploads: [],
     };
   }
@@ -245,7 +244,7 @@ export async function getFinishedItems() {
     return { items };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to load items",
+      error: humanError(err, "Failed to load items"),
       items: [],
     };
   }

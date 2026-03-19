@@ -3,6 +3,7 @@
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatPesos, mgToGrams } from "@/lib/utils";
+import { humanError } from "@/lib/errors";
 
 export type LogFilter = "all" | "items" | "products" | "stocks";
 
@@ -199,7 +200,7 @@ export async function getLogs(
   } catch (err) {
     return {
       logs: [],
-      error: err instanceof Error ? err.message : "Failed to load logs",
+      error: humanError(err, "Failed to load logs"),
     };
   }
 }
