@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 export const salesLineInputSchema = z.object({
-  itemId: z.number().int().positive("Select an item"),
+  itemId: z.number().int().positive("Please select an item"),
   productName: z.string().min(1, "Product name is required"),
   quantity: z.number().int().positive("Quantity must be at least 1"),
   unitPriceCentavos: z.number().int().nonnegative("Price cannot be negative").optional(),
@@ -20,7 +20,7 @@ export const processSalesSchema = z.object({
 export type ProcessSalesData = z.infer<typeof processSalesSchema>;
 
 export const manualEntryLineSchema = z.object({
-  itemId: z.number().int().positive("Select a product"),
+  itemId: z.number().int().positive("Please select a product"),
   quantity: z.number().int().positive("Quantity must be at least 1"),
   unitPricePesos: z.number().nonnegative("Price cannot be negative").optional(),
 });

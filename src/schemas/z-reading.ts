@@ -17,6 +17,7 @@ export const zReadingFormSchema = z.object({
   taxPesos: z.number().nonnegative().optional(),
   totalPesos: z.number().nonnegative().optional(),
   paymentMethod: z.string().optional(),
+  rawText: z.string().optional(),
   notes: z.string().max(500).optional(),
   lines: z.array(zReadingLineSchema).min(1, "At least one line item is required"),
 });

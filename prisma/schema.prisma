@@ -186,6 +186,7 @@ model ZReading {
   total         Int      @default(0)
   paymentMethod String?  @map("payment_method")
   imageUrl      String   @map("image_url")
+  rawText       String?  @map("raw_text")
   notes         String?
   status        String   @default("pending")
   createdAt     DateTime @default(now()) @map("created_at")
