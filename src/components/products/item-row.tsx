@@ -40,7 +40,8 @@ export function ItemRow({
       <div className="flex-1 space-y-1">
         <div className="relative">
           <select
-            className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-invalid={!!rowErrors?.childItemId}
+            className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
             {...register(`ingredients.${index}.childItemId`, {
               setValueAs: Number
             })}
@@ -78,9 +79,10 @@ export function ItemRow({
           <Input
             type="number"
             step="1"
-            min="0"
+            min="1"
             placeholder="Qty"
-            className={`h-8${rowErrors?.quantityPieces || rowErrors?.quantityGrams ? ' border-destructive focus-visible:ring-destructive/50' : ''}`}
+            className="h-8"
+            aria-invalid={!!(rowErrors?.quantityPieces || rowErrors?.quantityGrams)}
             {...register(`ingredients.${index}.quantityPieces`, {
               valueAsNumber: true
             })}
@@ -89,9 +91,10 @@ export function ItemRow({
           <Input
             type="number"
             step="0.1"
-            min="0"
+            min="0.1"
             placeholder="Qty"
-            className={`h-8${rowErrors?.quantityGrams ? ' border-destructive focus-visible:ring-destructive/50' : ''}`}
+            className="h-8"
+            aria-invalid={!!rowErrors?.quantityGrams}
             {...register(`ingredients.${index}.quantityGrams`, {
               valueAsNumber: true
             })}

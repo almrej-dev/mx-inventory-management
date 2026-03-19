@@ -1,8 +1,8 @@
 'use client';
 
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type FieldPath } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { productSchema, type ProductFormData } from '@/schemas/product';
 import { createProduct, updateProduct } from '@/actions/products';
@@ -28,6 +28,7 @@ interface ProductFormCreateProps {
   productType: 'FINISHED' | 'SEMI_FINISHED';
   ingredientItems: IngredientItem[];
   returnTo: string;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 interface ProductFormEditProps {
@@ -38,26 +39,31 @@ interface ProductFormEditProps {
   productSku: string;
   ingredientItems: IngredientItem[];
   returnTo: string;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 type ProductFormProps = ProductFormCreateProps | ProductFormEditProps;
 
 export function ProductForm(props: ProductFormProps) {
-  const { mode, ingredientItems, returnTo } = props;
+  const { mode, ingredientItems, returnTo, onDirtyChange } = props;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Create mode extra fields
-  const [productName, setProductName] = useState('');
-  const [productSku, setProductSku] = useState('');
+  const [productName, setProductName] = useState(
+    mode === 'edit' ? (props as ProductFormEditProps).productName : ''
+  );
+  const [productSku, setProductSku] = useState(
+    mode === 'edit' ? (props as ProductFormEditProps).productSku : ''
+  );
 
   const {
     register,
     control,
     handleSubmit,
     watch,
-    formState: { errors }
+    clearErrors,
+    formState: { errors, isDirty }
   } = useForm<ProductFormData>({
     resolver: standardSchemaResolver(productSchema),
     defaultValues:
@@ -74,6 +80,15 @@ export function ProductForm(props: ProductFormProps) {
     control,
     name: 'ingredients'
   });
+
+  const isNameDirty = mode === 'edit'
+    ? productName !== (props as ProductFormEditProps).productName ||
+      productSku !== (props as ProductFormEditProps).productSku
+    : productName !== '' || productSku !== '';
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty || isNameDirty);
+  }, [isDirty, isNameDirty, onDirtyChange]);
 
   const watchedIngredients = watch('ingredients');
 
@@ -100,15 +115,27 @@ export function ProductForm(props: ProductFormProps) {
           if (err._form) {
             setFormError(err._form[0]);
           } else {
-            const messages = Object.entries(err)
-              .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-              .join('; ');
-            setFormError(messages);
+            const allMsgs = Object.values(err).flat();
+            const requiredFields: string[] = [];
+            const otherMsgs: string[] = [];
+            for (const msg of allMsgs) {
+              const match = msg.match(/^(.+?) is required$/);
+              if (match) requiredFields.push(match[1]);
+              else otherMsgs.push(msg);
+            }
+            const parts: string[] = [];
+            if (requiredFields.length) parts.push(`${requiredFields.join(', ')} is required`);
+            parts.push(...otherMsgs);
+            setFormError(parts.join('; '));
           }
         }
       } else {
         const { parentItemId } = props as ProductFormEditProps;
-        const result = await updateProduct(parentItemId, data);
+        const result = await updateProduct(parentItemId, {
+          ...data,
+          name: productName,
+          sku: productSku,
+        });
 
         if ('success' in result && result.success) {
           router.push(returnTo);
@@ -120,10 +147,18 @@ export function ProductForm(props: ProductFormProps) {
           if (err._form) {
             setFormError(err._form[0]);
           } else {
-            const messages = Object.entries(err)
-              .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-              .join('; ');
-            setFormError(messages);
+            const allMsgs = Object.values(err).flat();
+            const requiredFields: string[] = [];
+            const otherMsgs: string[] = [];
+            for (const msg of allMsgs) {
+              const match = msg.match(/^(.+?) is required$/);
+              if (match) requiredFields.push(match[1]);
+              else otherMsgs.push(msg);
+            }
+            const parts: string[] = [];
+            if (requiredFields.length) parts.push(`${requiredFields.join(', ')} is required`);
+            parts.push(...otherMsgs);
+            setFormError(parts.join('; '));
           }
         }
       }
@@ -131,7 +166,7 @@ export function ProductForm(props: ProductFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} onFocus={(e) => { const name = (e.target as HTMLElement).getAttribute('name'); if (name) clearErrors(name as FieldPath<ProductFormData>); }} className="max-w-2xl space-y-6">
       {/* Form-level error */}
       {formError && (
         <div className="rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -140,38 +175,26 @@ export function ProductForm(props: ProductFormProps) {
       )}
 
       {/* Product Identity */}
-      {mode === 'create' ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="productName">Product Name</Label>
-            <Input
-              id="productName"
-              placeholder="e.g. Chocolate Cake"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="productSku">SKU</Label>
-            <Input
-              id="productSku"
-              placeholder="e.g. FIN-001"
-              value={productSku}
-              onChange={(e) => setProductSku(e.target.value.toUpperCase())}
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="productName">Product Name</Label>
+          <Input
+            id="productName"
+            placeholder="e.g. Chocolate Cake"
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+          />
         </div>
-      ) : (
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">Product</p>
-          <p className="text-base font-semibold">
-            {(props as ProductFormEditProps).productName}{' '}
-            <span className="font-mono text-sm font-normal text-muted-foreground">
-              {(props as ProductFormEditProps).productSku}
-            </span>
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="productSku">SKU</Label>
+          <Input
+            id="productSku"
+            placeholder="e.g. FIN-001"
+            value={productSku}
+            onChange={(e) => setProductSku(e.target.value.toUpperCase())}
+          />
         </div>
-      )}
+      </div>
 
       {/* Items Section */}
       <div className="space-y-3">
