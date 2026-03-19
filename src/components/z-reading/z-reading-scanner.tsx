@@ -4,10 +4,12 @@ import { useState, useCallback, useRef } from "react";
 import { Upload, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { parseReceiptText, type ParsedReceipt } from "@/lib/receipt-parser";
+import { preprocessReceiptImage } from "@/lib/image-preprocess";
+import { scanReceipt } from "@/actions/receipt-scan";
 import { cn } from "@/lib/utils";
 
 interface ZReadingScannerProps {
-  onScanned: (result: ParsedReceipt, imageFile: File) => void;
+  onScanned: (result: ParsedReceipt, imageFile: File, rawText: string) => void;
   onCancel: () => void;
 }
 
@@ -18,6 +20,7 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("Scanning receipt...");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processImage = useCallback(
@@ -27,7 +30,31 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
       setProgress(0);
 
       try {
-        const { createWorker } = await import("tesseract.js");
+        // Try OCR.space API first (higher accuracy for receipts)
+        setStatusText("Scanning receipt...");
+        setProgress(30);
+
+        const formData = new FormData();
+        formData.append("image", file);
+        const apiResult = await scanReceipt(formData);
+
+        if (apiResult.success) {
+          setProgress(90);
+          setStatusText("Parsing results...");
+          const parsed = parseReceiptText(apiResult.text);
+          onScanned(parsed, file, apiResult.text);
+          return;
+        }
+
+        // Fall back to Tesseract if API unavailable
+        console.warn("OCR.space unavailable, falling back to Tesseract:", apiResult.error);
+
+        setStatusText("Preprocessing image...");
+        setProgress(0);
+        const processedBlob = await preprocessReceiptImage(file);
+
+        setStatusText("Scanning receipt (offline)...");
+        const { createWorker, PSM } = await import("tesseract.js");
 
         const worker = await createWorker("eng", undefined, {
           logger: (m: { progress: number }) => {
@@ -37,14 +64,20 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
           },
         });
 
+        await worker.setParameters({
+          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: "1",
+          tessedit_char_blacklist: "|{}[]\\~`",
+        });
+
         const {
           data: { text },
-        } = await worker.recognize(file);
+        } = await worker.recognize(processedBlob);
 
         await worker.terminate();
 
         const parsed = parseReceiptText(text);
-        onScanned(parsed, file);
+        onScanned(parsed, file, text);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "OCR processing failed"
@@ -97,7 +130,7 @@ export function ZReadingScanner({ onScanned, onCancel }: ZReadingScannerProps) {
       <div className="flex flex-col items-center justify-center gap-4 py-16">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <div className="space-y-1 text-center">
-          <p className="text-sm font-medium">Scanning receipt...</p>
+          <p className="text-sm font-medium">{statusText}</p>
           <p className="text-sm text-muted-foreground">{progress}% complete</p>
         </div>
         <div className="h-1.5 w-48 overflow-hidden rounded-full bg-muted">

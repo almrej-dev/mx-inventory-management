@@ -26,6 +26,7 @@ type ZReadingDetailData = {
   paymentMethod: string | null;
   imageUrl: string;
   signedImageUrl: string;
+  rawText: string | null;
   notes: string | null;
   status: string;
   lines: {
@@ -51,8 +52,9 @@ export function ZReadingClient({
     ZReadingDetailData | null
   >(null);
   const [scannedData, setScannedData] = useState<ZReadingFormData | null>(null);
+  const [rawText, setRawText] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const handleView = useCallback(
     (id: number) => {
@@ -61,6 +63,7 @@ export function ZReadingClient({
         if (result.reading) {
           setSelectedReading(result.reading);
           setScannedData(null);
+          setRawText(result.reading.rawText ?? null);
           setImageFile(null);
           setView("detail");
         }
@@ -79,7 +82,8 @@ export function ZReadingClient({
     []
   );
 
-  function handleScanned(parsed: ParsedReceipt, file: File) {
+  function handleScanned(parsed: ParsedReceipt, file: File, ocrText: string) {
+    setRawText(ocrText);
     setScannedData({
       storeName: parsed.storeName,
       receiptNumber: parsed.receiptNumber,
@@ -117,6 +121,7 @@ export function ZReadingClient({
     setView("list");
     setSelectedReading(null);
     setScannedData(null);
+    setRawText(null);
     setImageFile(null);
   }
 
@@ -171,6 +176,7 @@ export function ZReadingClient({
         <ZReadingDetail
           reading={selectedReading ?? null}
           scannedData={scannedData ?? undefined}
+          rawText={rawText ?? undefined}
           imageFile={imageFile ?? undefined}
           onBack={handleBack}
           userRole={userRole}

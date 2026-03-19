@@ -56,7 +56,7 @@ export async function getZReadingDetail(id: number) {
   }
 }
 
-export async function saveZReading(rawData: unknown, imagePath: string) {
+export async function saveZReading(rawData: unknown, imagePath: string, rawText?: string) {
   const { user } = await requireRole("staff");
 
   const parsed = zReadingFormSchema.safeParse(rawData);
@@ -78,6 +78,7 @@ export async function saveZReading(rawData: unknown, imagePath: string) {
           total: data.totalPesos ? Math.round(data.totalPesos * 100) : 0,
           paymentMethod: data.paymentMethod || null,
           imageUrl: imagePath,
+          rawText: rawText || null,
           notes: data.notes || null,
           status: "completed",
           createdBy: user.id,
@@ -113,7 +114,7 @@ export async function saveZReading(rawData: unknown, imagePath: string) {
 }
 
 export async function updateZReading(id: number, rawData: unknown) {
-  const { user } = await requireRole("staff");
+  await requireRole("staff");
 
   const parsed = zReadingFormSchema.safeParse(rawData);
   if (!parsed.success) {
