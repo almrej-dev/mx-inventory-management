@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { zReadingFormSchema } from "@/schemas/z-reading";
+import { humanError } from "@/lib/errors";
 
 export async function getZReadings() {
   await requireRole("viewer");
@@ -21,7 +22,7 @@ export async function getZReadings() {
     return { readings };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to load Z-readings",
+      error: humanError(err, "Failed to load Z-readings"),
       readings: [],
     };
   }
@@ -51,7 +52,7 @@ export async function getZReadingDetail(id: number) {
     return { reading: { ...reading, signedImageUrl } };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to load Z-reading",
+      error: humanError(err, "Failed to load Z-reading"),
     };
   }
 }
@@ -110,13 +111,13 @@ export async function saveZReading(rawData: unknown, imagePath: string, rawText?
       }
 
       return reading;
-    });
+    }, { timeout: 15000 });
 
     revalidatePath("/z-reading");
     return { success: true, readingId: result.id };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to save Z-reading",
+      error: humanError(err, "Failed to save Z-reading"),
     };
   }
 }
@@ -165,13 +166,13 @@ export async function updateZReading(id: number, rawData: unknown) {
           })),
         });
       }
-    });
+    }, { timeout: 15000 });
 
     revalidatePath("/z-reading");
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to update Z-reading",
+      error: humanError(err, "Failed to update Z-reading"),
     };
   }
 }
@@ -185,7 +186,7 @@ export async function deleteZReading(id: number) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to delete Z-reading",
+      error: humanError(err, "Failed to delete Z-reading"),
     };
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { itemSchema } from "@/schemas/item";
 import { gramsToMg, pesosToCentavos, mgToGrams, centavosToPesos, formatPesos } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { humanError } from "@/lib/errors";
 
 const ITEM_TYPE_LABELS: Record<string, string> = {
   RAW_MATERIAL: "Raw Material",
@@ -112,17 +113,9 @@ export async function createItem(rawData: unknown) {
     revalidatePath("/logs");
     return { success: true, item };
   } catch (err) {
-    if (
-      err instanceof Error &&
-      err.message.includes("Unique constraint failed")
-    ) {
-      return { error: { sku: ["SKU already exists"] } };
-    }
     return {
       error: {
-        _form: [
-          err instanceof Error ? err.message : "Failed to create item",
-        ],
+        _form: [humanError(err, "Failed to create item")],
       },
     };
   }
@@ -189,17 +182,9 @@ export async function updateItem(id: number, rawData: unknown) {
     revalidatePath("/logs");
     return { success: true, item };
   } catch (err) {
-    if (
-      err instanceof Error &&
-      err.message.includes("Unique constraint failed")
-    ) {
-      return { error: { sku: ["SKU already exists"] } };
-    }
     return {
       error: {
-        _form: [
-          err instanceof Error ? err.message : "Failed to update item",
-        ],
+        _form: [humanError(err, "Failed to update item")],
       },
     };
   }
@@ -245,7 +230,7 @@ export async function deleteItem(id: number) {
     return { success: true };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to delete item",
+      error: humanError(err, "Failed to delete item"),
     };
   }
 }
@@ -315,7 +300,7 @@ export async function getItems(filters?: {
     return { items: itemsWithDisplay };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to fetch items",
+      error: humanError(err, "Failed to fetch items"),
     };
   }
 }

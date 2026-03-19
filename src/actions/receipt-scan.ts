@@ -1,6 +1,7 @@
 "use server";
 
 import { requireRole } from "@/lib/auth";
+import { humanError } from "@/lib/errors";
 
 /**
  * Server action that sends a receipt image to the OCR.space API
@@ -84,7 +85,6 @@ export async function scanReceipt(
 
     return { success: true, text };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "OCR request failed";
-    return { success: false, error: message };
+    return { success: false, error: humanError(err, "OCR request failed") };
   }
 }
