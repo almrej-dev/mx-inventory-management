@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type FieldPath } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import {
   manualEntrySchema,
@@ -33,6 +33,7 @@ export function ManualEntryForm() {
     register,
     control,
     handleSubmit,
+    clearErrors,
     formState: { errors },
   } = useForm<ManualEntryFormData>({
     resolver: standardSchemaResolver(manualEntrySchema),
@@ -117,15 +118,15 @@ export function ManualEntryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} onFocus={(e) => { const name = (e.target as HTMLElement).getAttribute('name'); if (name) clearErrors(name as FieldPath<ManualEntryFormData>); }} className="max-w-2xl space-y-6">
       {/* Status messages */}
       {formError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-lg border border-destructive/30 bg-destructive-muted px-4 py-3 text-sm text-destructive-muted-foreground">
           {formError}
         </div>
       )}
       {formSuccess && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+        <div className="rounded-lg border border-success/30 bg-success-muted px-4 py-3 text-sm text-success-muted-foreground">
           {formSuccess}
         </div>
       )}
@@ -133,7 +134,7 @@ export function ManualEntryForm() {
       {/* Sale Date */}
       <div className="space-y-2">
         <Label htmlFor="saleDate">Sale Date</Label>
-        <Input id="saleDate" type="date" {...register("saleDate")} />
+        <Input id="saleDate" type="date" aria-invalid={!!errors.saleDate} {...register("saleDate")} />
         {errors.saleDate && (
           <p className="text-sm text-destructive">{errors.saleDate.message}</p>
         )}
@@ -166,7 +167,7 @@ export function ManualEntryForm() {
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="flex items-start gap-3 rounded-lg border p-3"
+              className="space-y-3 rounded-lg border p-3 sm:space-y-0 sm:flex sm:items-start sm:gap-3"
             >
               {/* Product Selector */}
               <div className="flex-1 space-y-1">
@@ -182,7 +183,8 @@ export function ManualEntryForm() {
                     {...register(`lines.${index}.itemId`, {
                       valueAsNumber: true,
                     })}
-                    className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    aria-invalid={!!errors.lines?.[index]?.itemId}
+                    className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
                   >
                     <option value={0}>Select a product...</option>
                     {finishedItems.map((item) => (
@@ -211,74 +213,78 @@ export function ManualEntryForm() {
                 )}
               </div>
 
-              {/* Quantity */}
-              <div className="w-24 space-y-1">
-                <label
-                  htmlFor={`lines.${index}.quantity`}
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Qty
-                </label>
-                <Input
-                  id={`lines.${index}.quantity`}
-                  type="number"
-                  min="1"
-                  step="1"
-                  {...register(`lines.${index}.quantity`, {
-                    valueAsNumber: true,
-                  })}
-                />
-                {errors.lines?.[index]?.quantity && (
-                  <p className="text-xs text-destructive">
-                    {errors.lines[index].quantity.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Unit Price (optional) */}
-              <div className="w-32 space-y-1">
-                <label
-                  htmlFor={`lines.${index}.unitPricePesos`}
-                  className="text-xs font-medium text-muted-foreground"
-                >
-                  Price (PHP)
-                </label>
-                <Input
-                  id={`lines.${index}.unitPricePesos`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Optional"
-                  {...register(`lines.${index}.unitPricePesos`, {
-                    valueAsNumber: true,
-                    setValueAs: (v: string) => {
-                      if (v === "" || v === undefined) return undefined;
-                      const num = Number(v);
-                      return isNaN(num) ? undefined : num;
-                    },
-                  })}
-                />
-                {errors.lines?.[index]?.unitPricePesos && (
-                  <p className="text-xs text-destructive">
-                    {errors.lines[index].unitPricePesos.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Remove Button */}
-              {fields.length > 1 && (
-                <div className="pt-5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => remove(index)}
-                    className="text-destructive hover:text-destructive"
+              <div className="flex items-start gap-3">
+                {/* Quantity */}
+                <div className="w-full space-y-1 sm:w-24">
+                  <label
+                    htmlFor={`lines.${index}.quantity`}
+                    className="text-xs font-medium text-muted-foreground"
                   >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                    Qty
+                  </label>
+                  <Input
+                    id={`lines.${index}.quantity`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    aria-invalid={!!errors.lines?.[index]?.quantity}
+                    {...register(`lines.${index}.quantity`, {
+                      valueAsNumber: true,
+                    })}
+                  />
+                  {errors.lines?.[index]?.quantity && (
+                    <p className="text-xs text-destructive">
+                      {errors.lines[index].quantity.message}
+                    </p>
+                  )}
                 </div>
-              )}
+
+                {/* Unit Price (optional) */}
+                <div className="w-full space-y-1 sm:w-32">
+                  <label
+                    htmlFor={`lines.${index}.unitPricePesos`}
+                    className="text-xs font-medium text-muted-foreground"
+                  >
+                    Price (PHP)
+                  </label>
+                  <Input
+                    id={`lines.${index}.unitPricePesos`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Optional"
+                    aria-invalid={!!errors.lines?.[index]?.unitPricePesos}
+                    {...register(`lines.${index}.unitPricePesos`, {
+                      valueAsNumber: true,
+                      setValueAs: (v: string) => {
+                        if (v === "" || v === undefined) return undefined;
+                        const num = Number(v);
+                        return isNaN(num) ? undefined : num;
+                      },
+                    })}
+                  />
+                  {errors.lines?.[index]?.unitPricePesos && (
+                    <p className="text-xs text-destructive">
+                      {errors.lines[index].unitPricePesos.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Remove Button */}
+                {fields.length > 1 && (
+                  <div className="pt-5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => remove(index)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -291,6 +297,7 @@ export function ManualEntryForm() {
           id="notes"
           placeholder="Any additional notes about this sale..."
           maxLength={500}
+          aria-invalid={!!errors.notes}
           {...register("notes")}
         />
         {errors.notes && (
