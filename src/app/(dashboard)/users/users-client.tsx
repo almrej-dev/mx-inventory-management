@@ -29,7 +29,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 
 interface UsersClientProps {
   initialUsers: UserListItem[];
@@ -81,9 +88,9 @@ export function UsersClient({ initialUsers, currentUserId, error }: UsersClientP
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             User Management
           </h1>
           <p className="text-muted-foreground">
@@ -122,7 +129,7 @@ export function UsersClient({ initialUsers, currentUserId, error }: UsersClientP
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[48px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -148,25 +155,34 @@ export function UsersClient({ initialUsers, currentUserId, error }: UsersClientP
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingUser(user)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="icon-xs" />}
                         >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {user.id !== currentUserId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(user.id)}
-                            disabled={deleting === user.id}
+                          <MoreVertical className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setEditingUser(user)}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          {user.id !== currentUserId && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDelete(user.id)}
+                                disabled={deleting === user.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
