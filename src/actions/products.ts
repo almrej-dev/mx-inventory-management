@@ -158,7 +158,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
     return { error: fieldErrors };
   }
 
-  const { ingredients } = parsed.data;
+  const { name, sku, ingredients } = parsed.data;
 
   // Note: circular-reference and child-item type checks run outside the transaction.
   // A concurrent request could modify a child item between these checks and the write.
@@ -197,12 +197,25 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
   }
 
   try {
+    const oldIngredients = await fetchIngredientChanges(parentItemId);
+
     const snapshot = await prisma.$transaction(async (tx) => {
       const item = await tx.item.findUnique({
         where: { id: parentItemId },
         select: { name: true, sku: true },
       });
       if (!item) throw new Error("Product item not found");
+
+      // Update name/sku if provided
+      if (name || sku) {
+        await tx.item.update({
+          where: { id: parentItemId },
+          data: {
+            ...(name ? { name } : {}),
+            ...(sku ? { sku } : {}),
+          },
+        });
+      }
 
       await tx.recipeIngredient.deleteMany({
         where: { parentItemId },
@@ -221,7 +234,12 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
     });
 
     try {
-      const changes = await fetchIngredientChanges(parentItemId);
+      const newIngredients = await fetchIngredientChanges(parentItemId);
+      const oldList = (oldIngredients["Ingredients"] as string[]).sort().join("\n");
+      const newList = (newIngredients["Ingredients"] as string[]).sort().join("\n");
+      const changes = oldList !== newList
+        ? { "Ingredients": { from: oldIngredients["Ingredients"], to: newIngredients["Ingredients"] } }
+        : {};
       await prisma.auditLog.create({
         data: {
           entityType: "PRODUCT",
@@ -240,6 +258,7 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
     revalidatePath(`/products/${parentItemId}`);
     revalidatePath("/products/semi-finished");
     revalidatePath("/products/finished");
+    revalidatePath("/items");
     revalidatePath("/logs");
     return { success: true };
   } catch (err) {
