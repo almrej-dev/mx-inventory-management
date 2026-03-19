@@ -2,8 +2,15 @@
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ITEM_TYPES } from '@/lib/constants';
-import { ArrowUpDown, Eye, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { ProductListItem } from '@/actions/products';
 import { mgToGrams } from '@/lib/utils';
@@ -11,6 +18,20 @@ import { mgToGrams } from '@/lib/utils';
 const typeLabels: Record<string, string> = {};
 for (const t of ITEM_TYPES) {
   typeLabels[t.value] = t.label;
+}
+
+function cycleSorting(column: { getIsSorted: () => false | "asc" | "desc"; toggleSorting: (desc: boolean) => void; clearSorting: () => void }) {
+  const sorted = column.getIsSorted();
+  if (sorted === false) column.toggleSorting(false);
+  else if (sorted === "asc") column.toggleSorting(true);
+  else column.clearSorting();
+}
+
+function SortIcon({ column }: { column: { getIsSorted: () => false | "asc" | "desc" } }) {
+  const sorted = column.getIsSorted();
+  if (sorted === "asc") return <ArrowUp className="ml-1 h-3 w-3" />;
+  if (sorted === "desc") return <ArrowDown className="ml-1 h-3 w-3" />;
+  return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
 }
 
 interface ColumnOptions {
@@ -23,15 +44,21 @@ export function getProductColumns({
   return [
     {
       accessorKey: 'name',
+      sortingFn: (rowA, rowB) =>
+        (rowA.getValue("name") as string).localeCompare(
+          rowB.getValue("name") as string,
+          undefined,
+          { numeric: true, sensitivity: "base" }
+        ),
       header: ({ column }) => (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="-ml-2"
+          onClick={() => cycleSorting(column)}
+          className="-ml-2 whitespace-nowrap"
         >
           Product Name
-          <ArrowUpDown className="ml-1 h-3 w-3" />
+          <SortIcon column={column} />
         </Button>
       )
     },
@@ -41,11 +68,11 @@ export function getProductColumns({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="-ml-2"
+          onClick={() => cycleSorting(column)}
+          className="-ml-2 whitespace-nowrap"
         >
           SKU
-          <ArrowUpDown className="ml-1 h-3 w-3" />
+          <SortIcon column={column} />
         </Button>
       ),
       cell: ({ row }) => (
@@ -54,7 +81,22 @@ export function getProductColumns({
     },
     {
       accessorKey: 'ingredients',
-      header: 'Items',
+      sortingFn: (rowA, rowB) => {
+        const a = (rowA.getValue('ingredients') as { name: string }[]).length;
+        const b = (rowB.getValue('ingredients') as { name: string }[]).length;
+        return a - b;
+      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => cycleSorting(column)}
+          className="-ml-2 whitespace-nowrap"
+        >
+          Items
+          <SortIcon column={column} />
+        </Button>
+      ),
       cell: ({ row }) => {
         const ingredients = row.getValue('ingredients') as { name: string; sku: string; quantityMg: number }[];
         if (!ingredients.length) return <span className="text-muted-foreground">—</span>;
@@ -65,7 +107,17 @@ export function getProductColumns({
     },
     {
       accessorKey: 'totalWeightMg',
-      header: 'Total Weight',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => cycleSorting(column)}
+          className="-ml-2 whitespace-nowrap"
+        >
+          Total Weight
+          <SortIcon column={column} />
+        </Button>
+      ),
       cell: ({ row }) => {
         const totalWeightMg = row.getValue('totalWeightMg') as number;
         if (!totalWeightMg) return <span className="text-muted-foreground">—</span>;
@@ -78,11 +130,11 @@ export function getProductColumns({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="-ml-2"
+          onClick={() => cycleSorting(column)}
+          className="-ml-2 whitespace-nowrap"
         >
           Cost
-          <ArrowUpDown className="ml-1 h-3 w-3" />
+          <SortIcon column={column} />
         </Button>
       ),
       cell: ({ row }) => {
@@ -92,30 +144,36 @@ export function getProductColumns({
     },
     {
       id: 'actions',
+      size: 48,
       header: '',
       cell: ({ row }) => {
         const product = row.original;
         return (
-          <div className="flex items-center gap-1">
-            <Link href={`/products/${product.id}`}>
-              <Button variant="ghost" size="icon-xs">
-                <Eye className="h-3 w-3" />
-              </Button>
-            </Link>
-            <Link href={`/products/${product.id}/edit`}>
-              <Button variant="ghost" size="icon-xs">
-                <Pencil className="h-3 w-3" />
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => onDelete(product.id, product.name)}
-              className="text-destructive hover:text-destructive"
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-xs" />}
             >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem render={<Link href={`/products/${product.id}`} />}>
+                <Eye className="h-4 w-4" />
+                View
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href={`/products/${product.id}/edit`} />}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => onDelete(product.id, product.name)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       }
     }

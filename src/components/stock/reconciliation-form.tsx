@@ -4,8 +4,10 @@ import { useState, useMemo } from "react";
 import { submitReconciliation } from "@/actions/stock";
 import { mgToGrams } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ArrowUp, ArrowDown, ArrowUpDown, Search } from "lucide-react";
 import type { ItemTypeValue } from "@/types";
 
 interface ReconciliationItem {
@@ -22,6 +24,8 @@ interface ReconciliationFormProps {
 }
 
 type ItemTypeFilter = "ALL" | ItemTypeValue;
+type SortColumn = "name" | "type" | "stockQty" | "variance";
+type SortDirection = "asc" | "desc";
 
 /**
  * Convert storage units to display quantity.
@@ -51,16 +55,105 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
   const [counts, setCounts] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState("");
   const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
+
+  function handleSort(column: SortColumn) {
+    if (sortColumn === column) {
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else {
+        // Third click: clear sort
+        setSortColumn(null);
+        setSortDirection("asc");
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  }
 
   const filteredItems = useMemo(() => {
-    if (typeFilter === "ALL") return items;
-    return items.filter((item) => item.type === typeFilter);
-  }, [items, typeFilter]);
+    let result = items;
+
+    if (typeFilter !== "ALL") {
+      result = result.filter((item) => item.type === typeFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
+          item.sku.toLowerCase().includes(q)
+      );
+    }
+
+    if (sortColumn) {
+      result = [...result].sort((a, b) => {
+        let cmp = 0;
+        switch (sortColumn) {
+          case "name":
+            cmp = a.name.localeCompare(b.name);
+            break;
+          case "type":
+            cmp = a.type.localeCompare(b.type);
+            break;
+          case "stockQty":
+            cmp = storageToDisplay(a.stockQty, a.unitType) - storageToDisplay(b.stockQty, b.unitType);
+            break;
+          case "variance": {
+            const varA = (() => {
+              const raw = counts[a.id];
+              if (raw === undefined || raw === "") return null;
+              const physical = parseFloat(raw);
+              if (isNaN(physical)) return null;
+              return physical - storageToDisplay(a.stockQty, a.unitType);
+            })();
+            const varB = (() => {
+              const raw = counts[b.id];
+              if (raw === undefined || raw === "") return null;
+              const physical = parseFloat(raw);
+              if (isNaN(physical)) return null;
+              return physical - storageToDisplay(b.stockQty, b.unitType);
+            })();
+            // Nulls sort last
+            if (varA === null && varB === null) cmp = 0;
+            else if (varA === null) cmp = 1;
+            else if (varB === null) cmp = -1;
+            else cmp = varA - varB;
+            break;
+          }
+        }
+        return sortDirection === "desc" ? -cmp : cmp;
+      });
+    }
+
+    return result;
+  }, [items, typeFilter, searchQuery, sortColumn, sortDirection, counts]);
+
+  const pageCount = Math.ceil(filteredItems.length / pageSize);
+
+  const paginatedItems = useMemo(() => {
+    const start = currentPage * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
+
+  // Reset to first page when filters change
+  const filterKey = `${typeFilter}-${searchQuery}-${sortColumn}-${sortDirection}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setCurrentPage(0);
+  }
 
   function handleCountChange(itemId: number, value: string) {
     setCounts((prev) => ({ ...prev, [itemId]: value }));
@@ -157,16 +250,25 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
             submitStatus.type === "success"
-              ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
-              : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+              ? "border-success/30 bg-success-muted text-success-muted-foreground"
+              : "border-destructive/30 bg-destructive-muted text-destructive-muted-foreground"
           }`}
         >
           {submitStatus.message}
         </div>
       )}
 
-      {/* Type filter */}
-      <div className="flex items-center gap-3">
+      {/* Search & type filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 w-56 pl-8"
+          />
+        </div>
         <Label htmlFor="typeFilter" className="shrink-0">
           Filter by type:
         </Label>
@@ -211,15 +313,67 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium">Item</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-right font-medium">System Stock</th>
+                <th className="px-4 py-3 text-left font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("name")}
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                  >
+                    Item
+                    {sortColumn === "name" ? (
+                      sortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("type")}
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                  >
+                    Type
+                    {sortColumn === "type" ? (
+                      sortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("stockQty")}
+                    className="inline-flex items-center gap-1 justify-end w-full hover:text-foreground"
+                  >
+                    System Stock
+                    {sortColumn === "stockQty" ? (
+                      sortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-right font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("variance")}
+                    className="inline-flex items-center gap-1 justify-end w-full hover:text-foreground"
+                  >
+                    Variance
+                    {sortColumn === "variance" ? (
+                      sortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+                    )}
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-right font-medium">Physical Count</th>
-                <th className="px-4 py-3 text-right font-medium">Variance</th>
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item) => {
+              {paginatedItems.map((item) => {
                 const systemDisplay = storageToDisplay(item.stockQty, item.unitType);
                 const unit = unitLabel(item.unitType);
                 const variance = getVariance(item);
@@ -231,9 +385,9 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
                   const sign = variance > 0 ? "+" : "";
                   varianceDisplay = `${sign}${variance} ${unit}`;
                   if (variance > 0) {
-                    varianceClass = "text-green-600 dark:text-green-400 font-medium";
+                    varianceClass = "text-success font-medium";
                   } else if (variance < 0) {
-                    varianceClass = "text-red-600 dark:text-red-400 font-medium";
+                    varianceClass = "text-destructive font-medium";
                   } else {
                     varianceClass = "text-muted-foreground";
                   }
@@ -253,6 +407,9 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
                     <td className="px-4 py-3 text-right font-mono">
                       {systemDisplay} {unit}
                     </td>
+                    <td className={`px-4 py-3 text-right font-mono ${varianceClass}`}>
+                      {varianceDisplay}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <input
                         type="number"
@@ -263,16 +420,40 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
                         placeholder={`e.g. ${systemDisplay}`}
                         className="w-32 rounded-md border border-input bg-transparent px-2.5 py-1 text-right text-sm font-mono outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                       />
-                      <span className="ml-1 text-xs text-muted-foreground">{unit}</span>
-                    </td>
-                    <td className={`px-4 py-3 text-right font-mono ${varianceClass}`}>
-                      {varianceDisplay}
+                      <span className="ml-1 inline-block w-6 text-left text-xs text-muted-foreground">{unit}</span>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pageCount > 1 && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage + 1} of {pageCount}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => p - 1)}
+            disabled={currentPage === 0}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => p + 1)}
+            disabled={currentPage >= pageCount - 1}
+          >
+            Next
+          </Button>
         </div>
       )}
 

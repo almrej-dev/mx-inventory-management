@@ -33,12 +33,6 @@ export default async function EditProductPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Edit Product</h1>
-        <p className="text-sm text-muted-foreground">
-          Update ingredients and quantities for {product.name}.
-        </p>
-      </div>
       <EditProductClient
         product={product}
         ingredientItems={ingredientResult.items}

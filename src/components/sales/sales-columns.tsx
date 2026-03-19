@@ -3,7 +3,13 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, Eye, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -99,15 +105,23 @@ export function getSalesColumns(): ColumnDef<SalesUploadRow>[] {
     },
     {
       id: "actions",
+      size: 48,
       header: "",
       cell: ({ row }) => {
         return (
-          <Link href={`/sales/${row.original.id}`}>
-            <Button variant="ghost" size="sm">
-              <Eye className="mr-1 h-3 w-3" />
-              View
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-xs" />}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem render={<Link href={`/sales/${row.original.id}`} />}>
+                <Eye className="h-4 w-4" />
+                View
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       },
     },

@@ -100,21 +100,21 @@ export function InventoryTrendsCard({
               <Bar
                 dataKey="receives"
                 name="Receives"
-                fill="oklch(0.623 0.214 155)"
+                fill="var(--success)"
                 radius={[2, 2, 0, 0]}
                 maxBarSize={20}
               />
               <Bar
                 dataKey="sales"
                 name="Sales"
-                fill="oklch(0.623 0.214 259.815)"
+                fill="var(--chart-2)"
                 radius={[2, 2, 0, 0]}
                 maxBarSize={20}
               />
               <Bar
                 dataKey="waste"
                 name="Waste"
-                fill="oklch(0.623 0.214 27)"
+                fill="var(--destructive)"
                 radius={[2, 2, 0, 0]}
                 maxBarSize={20}
               />

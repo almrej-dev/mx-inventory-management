@@ -164,7 +164,7 @@ export default function SkuLegendPage() {
       </div>
 
       {/* Note */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm dark:border-blue-800 dark:bg-blue-950">
+      <div className="rounded-lg border bg-muted/50 p-4 text-sm text-muted-foreground">
         <p>
           <strong>Note:</strong> SKUs are editable and not auto-generated. If
           you already have your own SKU codes, use those instead. This guide is a

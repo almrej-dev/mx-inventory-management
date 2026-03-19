@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { itemSchema, type ItemFormData } from '@/schemas/item';
@@ -27,6 +27,7 @@ interface ItemFormProps {
     error?: Record<string, string[]>;
   }>;
   mode: 'create' | 'edit';
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 const typePrefixes = [
@@ -47,7 +48,7 @@ const categoryCodes = [
   { code: 'LB', meaning: 'Labels & Stickers' }
 ];
 
-export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
+export function ItemForm({ initialData, onSubmit, mode, onDirtyChange }: ItemFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -55,7 +56,8 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting }
+    clearErrors,
+    formState: { errors, isSubmitting, isDirty }
   } = useForm<ItemFormData>({
     resolver: standardSchemaResolver(itemSchema),
     defaultValues: initialData
@@ -80,6 +82,10 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
         }
   });
 
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
   const unitType = watch('unitType') ?? 'grams';
 
   const unitWeightGrams = watch('unitWeightGrams');
@@ -97,10 +103,18 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
       if (result.error._form) {
         setServerError(result.error._form[0]);
       } else {
-        const messages = Object.entries(result.error)
-          .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-          .join('; ');
-        setServerError(messages);
+        const allMsgs = Object.values(result.error).flat();
+        const requiredFields: string[] = [];
+        const otherMsgs: string[] = [];
+        for (const msg of allMsgs) {
+          const match = msg.match(/^(.+?) is required$/);
+          if (match) requiredFields.push(match[1]);
+          else otherMsgs.push(msg);
+        }
+        const parts: string[] = [];
+        if (requiredFields.length) parts.push(`${requiredFields.join(', ')} is required`);
+        parts.push(...otherMsgs);
+        setServerError(parts.join('; '));
       }
     }
   }
@@ -108,12 +122,17 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
   return (
     <div className="flex flex-col-reverse items-start gap-8 lg:flex-row">
       <form
+        noValidate
         onSubmit={handleSubmit(handleFormSubmit)}
+        onFocus={(e) => {
+          const name = (e.target as HTMLElement).getAttribute('name');
+          if (name && name in errors) clearErrors(name as keyof ItemFormData);
+        }}
         className="w-full max-w-lg space-y-4"
       >
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" placeholder="e.g., Sugar" {...register('name')} />
+          <Input id="name" placeholder="e.g., Sugar" aria-invalid={!!errors.name} {...register('name')} />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
           )}
@@ -121,7 +140,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor="sku">SKU</Label>
-          <Input id="sku" placeholder="e.g., RM-DC-001" {...register('sku')} />
+          <Input id="sku" placeholder="e.g., RM-DC-001" aria-invalid={!!errors.sku} {...register('sku')} />
           {errors.sku && (
             <p className="text-sm text-destructive">{errors.sku.message}</p>
           )}
@@ -132,7 +151,8 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
           <div className="relative">
             <select
               id="type"
-              className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
+              aria-invalid={!!errors.type}
               {...register('type')}
             >
               {ITEM_TYPES.map((t) => (
@@ -164,6 +184,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
           <Input
             id="category"
             placeholder="e.g., Dairy & Cream"
+            aria-invalid={!!errors.category}
             {...register('category')}
           />
           {errors.category && (
@@ -210,6 +231,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
             min="0"
             step={unitType === 'grams' ? '0.1' : '1'}
             placeholder={unitType === 'grams' ? 'e.g., 850' : 'e.g., 50'}
+            aria-invalid={!!errors.unitWeightGrams}
             {...register('unitWeightGrams', { valueAsNumber: true })}
           />
           {errors.unitWeightGrams && (
@@ -227,6 +249,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
             min="1"
             step="1"
             placeholder="e.g., 8"
+            aria-invalid={!!errors.cartonSize}
             {...register('cartonSize', { valueAsNumber: true })}
           />
           {errors.cartonSize && (
@@ -253,6 +276,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
             min="0"
             step="0.01"
             placeholder="e.g., 45.50"
+            aria-invalid={!!errors.costPesos}
             {...register('costPesos', { valueAsNumber: true })}
           />
           {errors.costPesos && (
@@ -290,6 +314,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
             min="0"
             step="1"
             placeholder="e.g., 10"
+            aria-invalid={!!errors.minStockQty}
             {...register('minStockQty', { valueAsNumber: true })}
           />
           {errors.minStockQty && (
@@ -365,7 +390,7 @@ export function ItemForm({ initialData, onSubmit, mode }: ItemFormProps) {
           </p>
         </div>
 
-        <div className="rounded-md border border-blue-200 bg-blue-50 p-2 text-xs dark:border-blue-800 dark:bg-blue-950">
+        <div className="rounded-md border bg-muted/50 p-2 text-xs text-muted-foreground">
           <p>
             SKUs are editable and not auto-generated. Use your own codes if you
             prefer.

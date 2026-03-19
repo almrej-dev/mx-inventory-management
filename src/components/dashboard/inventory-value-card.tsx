@@ -23,12 +23,12 @@ interface InventoryValueCardProps {
 }
 
 const COLORS = [
-  "oklch(0.623 0.214 259.815)",
-  "oklch(0.623 0.214 155)",
-  "oklch(0.623 0.214 27)",
-  "oklch(0.623 0.214 330)",
-  "oklch(0.546 0.245 262.881)",
-  "oklch(0.488 0.243 264.376)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-1)",
+  "var(--chart-2)",
 ];
 
 export function InventoryValueCard({

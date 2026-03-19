@@ -175,3 +175,39 @@ model AuditLog {
   @@index([entityType, createdAt])
   @@map("audit_logs")
 }
+
+model ZReading {
+  id            Int      @id @default(autoincrement())
+  storeName     String?  @map("store_name")
+  receiptNumber String?  @map("receipt_number")
+  receiptDate   DateTime @map("receipt_date")
+  subtotal      Int      @default(0)
+  tax           Int      @default(0)
+  total         Int      @default(0)
+  paymentMethod String?  @map("payment_method")
+  imageUrl      String   @map("image_url")
+  rawText       String?  @map("raw_text")
+  notes         String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdBy     String   @map("created_by") @db.Uuid
+
+  lines ZReadingLine[]
+
+  @@map("z_readings")
+}
+
+model ZReadingLine {
+  id                Int    @id @default(autoincrement())
+  readingId         Int    @map("reading_id")
+  productName       String @map("product_name")
+  quantity          Int    @default(1)
+  unitPriceCentavos Int    @default(0) @map("unit_price_centavos")
+  lineTotalCentavos Int    @default(0) @map("line_total_centavos")
+
+  reading ZReading @relation(fields: [readingId], references: [id], onDelete: Cascade)
+
+  @@index([readingId])
+  @@map("z_reading_lines")
+}

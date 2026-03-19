@@ -9,7 +9,7 @@ export default async function SalesHistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Sales History</h1>
           <p className="text-muted-foreground">
@@ -33,7 +33,7 @@ export default async function SalesHistoryPage() {
       </div>
 
       {result.error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-lg border border-destructive/30 bg-destructive-muted px-4 py-3 text-sm text-destructive-muted-foreground">
           {result.error}
         </div>
       )}

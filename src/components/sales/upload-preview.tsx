@@ -151,13 +151,13 @@ export function UploadPreview({
       {/* Summary bar */}
       <div className="flex flex-wrap items-center gap-4 rounded-md border border-border bg-muted/50 px-4 py-3 text-sm">
         <span>
-          <span className="font-semibold text-green-700 dark:text-green-400">
+          <span className="font-semibold text-success">
             {validRows.length}
           </span>{" "}
           matched
         </span>
         <span>
-          <span className="font-semibold text-red-700 dark:text-red-400">
+          <span className="font-semibold text-destructive">
             {errorRows.length}
           </span>{" "}
           with errors
@@ -197,7 +197,7 @@ export function UploadPreview({
                   key={row.rowNumber}
                   className={
                     hasErrors
-                      ? "border-b bg-red-50 dark:bg-red-950/20"
+                      ? "border-b bg-destructive-muted/50"
                       : "border-b"
                   }
                 >
@@ -208,7 +208,7 @@ export function UploadPreview({
                   <td className="px-3 py-2">
                     {row.matchedItem ? (
                       <span className="inline-flex items-center gap-1">
-                        <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                        <Check className="h-3.5 w-3.5 text-success" />
                         {row.matchedItem.name}
                         {row.matchedItem.sku && (
                           <span className="text-muted-foreground">
@@ -217,7 +217,7 @@ export function UploadPreview({
                         )}
                       </span>
                     ) : (
-                      <span className="text-red-600 dark:text-red-400">
+                      <span className="text-destructive">
                         Not found
                       </span>
                     )}
@@ -225,7 +225,7 @@ export function UploadPreview({
                   <td className="px-3 py-2 text-right">{row.quantity || "—"}</td>
                   <td className="px-3 py-2">
                     {row.errors.length > 0 ? (
-                      <span className="inline-flex items-start gap-1 text-red-600 dark:text-red-400">
+                      <span className="inline-flex items-start gap-1 text-destructive">
                         <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>{row.errors.join("; ")}</span>
                       </span>

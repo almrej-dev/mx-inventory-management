@@ -9,6 +9,7 @@ export default async function WastePage() {
       sku: true,
       type: true,
       unitType: true,
+      stockQty: true,
     },
     orderBy: { name: "asc" },
   });

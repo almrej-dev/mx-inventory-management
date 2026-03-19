@@ -19,7 +19,8 @@ import {
   ReceiptText,
   BarChart3,
   Trash2,
-  ClipboardCheck
+  ClipboardCheck,
+  ScanLine
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -101,6 +102,12 @@ const navigation: NavEntry[] = [
     ]
   },
   {
+    name: 'Z-Reading',
+    href: '/z-reading',
+    icon: ScanLine,
+    roles: ['admin', 'staff', 'viewer']
+  },
+  {
     name: 'Reports',
     href: '/reports',
     icon: BarChart3,
@@ -117,17 +124,17 @@ const navigation: NavEntry[] = [
         roles: ['admin', 'staff']
       },
       {
-        name: 'Waste',
-        href: '/stock/waste',
-        icon: Trash2,
-        roles: ['admin', 'staff']
-      },
-      {
         name: 'Reconciliation',
         href: '/stock/reconciliation',
         icon: ClipboardCheck,
         roles: ['admin', 'staff']
       },
+      {
+        name: 'Waste',
+        href: '/stock/waste',
+        icon: Trash2,
+        roles: ['admin', 'staff']
+      }
     ]
   },
   {
@@ -135,7 +142,7 @@ const navigation: NavEntry[] = [
     roles: ['admin'],
     items: [
       { name: 'Users', href: '/users', icon: Users, roles: ['admin'] },
-      { name: 'Logs', href: '/logs', icon: ScrollText, roles: ['admin'] },
+      { name: 'Logs', href: '/logs', icon: ScrollText, roles: ['admin'] }
     ]
   }
 ];
@@ -160,7 +167,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r bg-card">
+    <aside className="hidden h-full w-64 flex-col border-r bg-card md:flex">
       <div className="flex h-14 items-center border-b px-4">
         <Link href="/" className="text-lg font-semibold">
           MX Inventory

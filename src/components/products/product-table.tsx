@@ -33,7 +33,9 @@ interface ProductTableProps {
 
 export function ProductTable({ data, newHref }: ProductTableProps) {
   const router = useRouter();
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'name', desc: false }
+  ]);
   const [globalFilter, setGlobalFilter] = useState("");
 
   const handleDelete = useCallback(

@@ -44,13 +44,13 @@ export function OrderingCard({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Need reorder</p>
-            <p className="text-xl font-bold text-red-600 dark:text-red-400">
+            <p className="text-xl font-bold text-destructive">
               {reorderItems.length}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Surplus items</p>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+            <p className="text-xl font-bold text-chart-2">
               {surplusCount}
             </p>
           </div>
@@ -88,8 +88,8 @@ export function OrderingCard({
                     <td
                       className={`px-3 py-2 text-right font-semibold ${
                         item.stockQty <= 0
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-amber-600 dark:text-amber-400"
+                          ? "text-destructive"
+                          : "text-warning"
                       }`}
                     >
                       {item.stockQty.toLocaleString()}

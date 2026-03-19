@@ -22,12 +22,6 @@ export default async function EditItemPage({ params }: EditItemPageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Edit Item</h1>
-        <p className="text-sm text-muted-foreground">
-          Update item details for {item.name}.
-        </p>
-      </div>
       <EditItemClient item={item} />
     </div>
   );

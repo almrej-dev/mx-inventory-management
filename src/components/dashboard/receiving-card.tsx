@@ -61,7 +61,7 @@ export function ReceivingCard({
         {lowStockItems.length > 0 ? (
           <Link
             href="/stock/receiving"
-            className="flex items-center gap-3 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/70"
+            className="flex items-center gap-3 rounded-lg bg-success-muted p-3 text-sm font-medium text-success-muted-foreground transition-colors hover:bg-success-muted/80"
           >
             <PackageCheck className="h-5 w-5 shrink-0" />
             <span>
@@ -89,9 +89,9 @@ export function ReceivingCard({
                   : 0;
               const isCritical = item.stockQty <= 0;
 
-              let barColor = "bg-emerald-500";
-              if (isCritical) barColor = "bg-red-500";
-              else if (pct < 50) barColor = "bg-amber-500";
+              let barColor = "bg-success";
+              if (isCritical) barColor = "bg-destructive";
+              else if (pct < 50) barColor = "bg-warning";
 
               return (
                 <div key={item.id} className="space-y-1">
@@ -102,7 +102,7 @@ export function ReceivingCard({
                     <span
                       className={
                         isCritical
-                          ? "text-red-600 dark:text-red-400 font-semibold"
+                          ? "text-destructive font-semibold"
                           : "text-muted-foreground"
                       }
                     >

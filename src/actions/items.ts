@@ -13,7 +13,7 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
   PACKAGING: "Packaging",
 };
 
-function buildItemChanges(item: {
+type ItemSnapshot = {
   type: string;
   unitType: string;
   category: string | null;
@@ -21,16 +21,37 @@ function buildItemChanges(item: {
   cartonSize: number;
   costCentavos: number;
   minStockQty: number;
-}) {
-  return {
-    "Type": ITEM_TYPE_LABELS[item.type] ?? item.type,
-    "Category": item.category ?? "—",
-    "Unit": item.unitType,
-    "Unit weight": item.unitType === "pcs" ? `${item.cartonSize} pcs` : `${mgToGrams(item.unitWeightMg)} g`,
-    "Carton size": item.cartonSize,
-    "Cost": formatPesos(item.costCentavos),
-    "Min stock qty": item.minStockQty,
-  };
+};
+
+function formatItemField(item: ItemSnapshot, key: string): string {
+  switch (key) {
+    case "Type": return ITEM_TYPE_LABELS[item.type] ?? item.type;
+    case "Category": return item.category ?? "—";
+    case "Unit": return item.unitType;
+    case "Unit weight": return item.unitType === "pcs" ? `${item.cartonSize} pcs` : `${mgToGrams(item.unitWeightMg)} g`;
+    case "Carton size": return String(item.cartonSize);
+    case "Cost": return formatPesos(item.costCentavos);
+    case "Min stock qty": return String(item.minStockQty);
+    default: return "";
+  }
+}
+
+const ITEM_FIELDS = ["Type", "Category", "Unit", "Unit weight", "Carton size", "Cost", "Min stock qty"];
+
+function buildItemChanges(item: ItemSnapshot) {
+  return Object.fromEntries(ITEM_FIELDS.map((key) => [key, formatItemField(item, key)]));
+}
+
+function buildItemDiff(oldItem: ItemSnapshot, newItem: ItemSnapshot) {
+  const diff: Record<string, string | { from: string; to: string }> = {};
+  for (const key of ITEM_FIELDS) {
+    const oldVal = formatItemField(oldItem, key);
+    const newVal = formatItemField(newItem, key);
+    if (oldVal !== newVal) {
+      diff[key] = { from: oldVal, to: newVal };
+    }
+  }
+  return diff;
 }
 
 export async function createItem(rawData: unknown) {
@@ -135,6 +156,8 @@ export async function updateItem(id: number, rawData: unknown) {
   const unitCostCentavos = rest.cartonSize > 0 ? Math.round(costPerCartonCentavos / rest.cartonSize) : costPerCartonCentavos;
 
   try {
+    const oldItem = await prisma.item.findUniqueOrThrow({ where: { id } });
+
     const item = await prisma.item.update({
       where: { id },
       data: {
@@ -154,7 +177,7 @@ export async function updateItem(id: number, rawData: unknown) {
           entityName: item.name,
           entitySku: item.sku,
           action: "UPDATE",
-          changes: buildItemChanges(item),
+          changes: buildItemDiff(oldItem, item),
           createdBy: authUser.id,
         },
       });

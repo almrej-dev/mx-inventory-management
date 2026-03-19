@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CardTitle
+} from '@/components/ui/card';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,23 +26,27 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     try {
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       });
 
       if (signInError) {
         setError(signInError.message);
+        setLoading(false);
         return;
       }
 
-      router.push("/");
+      router.push('/');
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
-    } finally {
+      setError('An unexpected error occurred');
       setLoading(false);
     }
   }
@@ -50,7 +54,7 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Inventory Management</CardTitle>
+        <CardTitle className="text-2xl">MX Inventory Management</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>
@@ -63,6 +67,7 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              readOnly={loading}
               required
             />
           </div>
@@ -74,14 +79,13 @@ export default function LoginPage() {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              readOnly={loading}
               required
             />
           </div>
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
       </CardContent>

@@ -41,7 +41,9 @@ interface ItemTableProps {
 
 export function ItemTable({ data }: ItemTableProps) {
   const router = useRouter();
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'name', desc: false }
+  ]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -90,7 +92,9 @@ export function ItemTable({ data }: ItemTableProps) {
   const columnFilters = useMemo(
     () => [
       ...(typeFilter !== 'ALL' ? [{ id: 'type', value: typeFilter }] : []),
-      ...(categoryFilter !== 'ALL' ? [{ id: 'category', value: categoryFilter }] : [])
+      ...(categoryFilter !== 'ALL'
+        ? [{ id: 'category', value: categoryFilter }]
+        : [])
     ],
     [typeFilter, categoryFilter]
   );
@@ -165,13 +169,20 @@ export function ItemTable({ data }: ItemTableProps) {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    style={
+                      header.column.columnDef.size
+                        ? { width: header.column.columnDef.size }
+                        : undefined
+                    }
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -188,7 +199,14 @@ export function ItemTable({ data }: ItemTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      style={
+                        cell.column.columnDef.size
+                          ? { width: cell.column.columnDef.size }
+                          : undefined
+                      }
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -219,20 +237,31 @@ export function ItemTable({ data }: ItemTableProps) {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Item</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This action cannot
-              be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" disabled={isDeleting} onClick={() => setDeleteTarget(null)}>
+            <Button
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => setDeleteTarget(null)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
@@ -241,46 +270,27 @@ export function ItemTable({ data }: ItemTableProps) {
 
       {/* Pagination */}
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Rows per page:
-            </span>
-            <select
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              className="flex h-7 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {[10, 25, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of{' '}
-              {table.getPageCount()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm text-muted-foreground">
+            Page {table.getState().pagination.pageIndex + 1} of{' '}
+            {table.getPageCount()}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

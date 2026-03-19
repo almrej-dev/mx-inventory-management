@@ -51,7 +51,7 @@ export function WasteCard({
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               Today
             </p>
-            <p className="text-base font-bold text-red-600 dark:text-red-400">
+            <p className="text-base font-bold text-destructive">
               {formatPesos(todayCentavos)}
             </p>
           </div>
@@ -59,7 +59,7 @@ export function WasteCard({
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               Yesterday
             </p>
-            <p className="text-base font-bold text-red-600 dark:text-red-400">
+            <p className="text-base font-bold text-destructive">
               {formatPesos(yesterdayCentavos)}
             </p>
           </div>
@@ -67,7 +67,7 @@ export function WasteCard({
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               This week
             </p>
-            <p className="text-base font-bold text-red-600 dark:text-red-400">
+            <p className="text-base font-bold text-destructive">
               {formatPesos(weekCentavos)}
             </p>
           </div>
@@ -88,13 +88,13 @@ export function WasteCard({
                 <div className="min-w-0">
                   <p className="font-medium truncate">{item.itemName}</p>
                   <p className="text-xs text-muted-foreground">
-                    qty {item.quantity.toLocaleString()} &middot;{" "}
+                    qty {item.quantity.toLocaleString()} ·{" "}
                     {formatDistanceToNow(new Date(item.createdAt), {
                       addSuffix: true,
                     })}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-red-600 dark:text-red-400 shrink-0 ml-2">
+                <span className="text-sm font-semibold text-destructive shrink-0 ml-2">
                   {formatPesos(item.costCentavos)}
                 </span>
               </div>
