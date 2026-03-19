@@ -57,6 +57,7 @@ export function useFormPersistence<T extends FieldValues>(
   }, [form, storageKey, enabled]);
 
   const clearDraft = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     try {
       localStorage.removeItem(storageKey);
     } catch {

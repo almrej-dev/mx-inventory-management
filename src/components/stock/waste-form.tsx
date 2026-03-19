@@ -102,6 +102,7 @@ export function WasteForm({ items }: WasteFormProps) {
   );
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
   const clearDraft = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
   }, []);
 

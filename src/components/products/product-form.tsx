@@ -141,6 +141,7 @@ export function ProductForm(props: ProductFormProps) {
 
   function clearAllDrafts() {
     clearDraft();
+    if (metaTimerRef.current) clearTimeout(metaTimerRef.current);
     clearProductMeta(draftKey);
   }
 

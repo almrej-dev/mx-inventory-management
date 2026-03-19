@@ -111,6 +111,7 @@ export function ReconciliationForm({ items }: ReconciliationFormProps) {
   );
 
   const clearDraft = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     try {
       localStorage.removeItem(DRAFT_KEY);
     } catch {
