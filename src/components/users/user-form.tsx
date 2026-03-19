@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { userSchema, editUserSchema, type UserFormData, type EditUserFormData } from "@/schemas/user";
 import { createUser, updateUser } from "@/actions/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { APP_ROLES } from "@/lib/constants";
 
 interface CreateUserFormProps {
@@ -24,28 +31,11 @@ interface EditUserFormProps {
 
 type UserFormProps = CreateUserFormProps | EditUserFormProps;
 
-const roleSelectClass =
-  "flex h-9 w-full appearance-none rounded-lg border border-input bg-background px-2.5 py-2 pr-8 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-
-const ChevronIcon = () => (
-  <svg
-    className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-);
 
 function CreateForm({ onSuccess }: { onSuccess?: () => void }) {
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<UserFormData>({
+  const { register, handleSubmit, reset, control, clearErrors, formState: { errors, isSubmitting } } = useForm<UserFormData>({
     resolver: standardSchemaResolver(userSchema),
     defaultValues: { role: "staff" },
   });
@@ -62,35 +52,43 @@ function CreateForm({ onSuccess }: { onSuccess?: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} onFocus={(e) => { const name = (e.target as HTMLElement).getAttribute('name'); if (name && name in errors) clearErrors(name as keyof UserFormData); }} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="fullName">Full Name</Label>
-        <Input id="fullName" placeholder="John Doe" {...register("fullName")} />
+        <Input id="fullName" placeholder="John Doe" aria-invalid={!!errors.fullName} {...register("fullName")} />
         {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" placeholder="user@example.com" {...register("email")} />
+        <Input id="email" type="email" placeholder="user@example.com" aria-invalid={!!errors.email} {...register("email")} />
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" placeholder="Minimum 8 characters" {...register("password")} />
+        <Input id="password" type="password" placeholder="Minimum 8 characters" aria-invalid={!!errors.password} {...register("password")} />
         {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="role">Role</Label>
-        <div className="relative">
-          <select id="role" className={roleSelectClass} {...register("role")}>
-            {APP_ROLES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
-          <ChevronIcon />
-        </div>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="role" className="w-full capitalize" aria-invalid={!!errors.role} onFocus={() => clearErrors("role")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APP_ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
         {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
       </div>
 
@@ -111,7 +109,7 @@ function EditForm({ userId, initialData, onSuccess }: Omit<EditUserFormProps, "m
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EditUserFormData>({
+  const { register, handleSubmit, control, clearErrors, formState: { errors, isSubmitting } } = useForm<EditUserFormData>({
     resolver: standardSchemaResolver(editUserSchema),
     defaultValues: {
       fullName: initialData.fullName,
@@ -151,23 +149,31 @@ function EditForm({ userId, initialData, onSuccess }: Omit<EditUserFormProps, "m
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} onFocus={(e) => { const name = (e.target as HTMLElement).getAttribute('name'); if (name && name in errors) clearErrors(name as keyof EditUserFormData); }} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="fullName">Full Name</Label>
-        <Input id="fullName" placeholder="John Doe" {...register("fullName")} />
+        <Input id="fullName" placeholder="John Doe" aria-invalid={!!errors.fullName} {...register("fullName")} />
         {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="role">Role</Label>
-        <div className="relative">
-          <select id="role" className={roleSelectClass} {...register("role")}>
-            {APP_ROLES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
-          <ChevronIcon />
-        </div>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="role" className="w-full capitalize" aria-invalid={!!errors.role} onFocus={() => clearErrors("role")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APP_ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
         {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
       </div>
 
