@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, User } from "lucide-react";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import type { AppRole } from "@/types";
 
 interface HeaderProps {
@@ -41,9 +42,9 @@ export function Header({ userEmail, userName, userRole }: HeaderProps) {
     : userEmail.slice(0, 2).toUpperCase();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b px-6">
-      <div />
-      <div className="flex items-center gap-3">
+    <header className="flex h-14 items-center border-b px-4 md:px-6">
+      <MobileNav userRole={userRole} />
+      <div className="ml-auto flex items-center gap-2 md:gap-3">
         <Badge variant="outline" className="capitalize">
           {userRole}
         </Badge>
