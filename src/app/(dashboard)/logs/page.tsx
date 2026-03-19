@@ -34,9 +34,9 @@ export default async function LogsPage({
     );
   }
 
-  // When no range params, default to the most recent log date (single-day view)
-  const activeFrom = rawFrom ?? bounds.latest;
-  const activeTo = rawTo ?? bounds.latest;
+  // When no range params, default to today (single-day view)
+  const activeFrom = rawFrom ?? today;
+  const activeTo = rawTo ?? today;
 
   const { logs, error } = await getLogs(filter, activeFrom, activeTo);
 
