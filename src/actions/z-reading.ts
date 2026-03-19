@@ -56,8 +56,16 @@ export async function getZReadingDetail(id: number) {
   }
 }
 
+/** Validate that imagePath matches the expected `{timestamp}-{safeName}` format with no traversal */
+const IMAGE_PATH_PATTERN = /^\d+-[\w._-]+$/;
+
 export async function saveZReading(rawData: unknown, imagePath: string, rawText?: string) {
   const { user } = await requireRole("staff");
+
+  // Server-side validation: reject paths with traversal or unexpected format
+  if (imagePath && !IMAGE_PATH_PATTERN.test(imagePath)) {
+    return { error: "Invalid image path." };
+  }
 
   const parsed = zReadingFormSchema.safeParse(rawData);
   if (!parsed.success) {

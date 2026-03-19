@@ -1,5 +1,7 @@
 "use server";
 
+import { requireRole } from "@/lib/auth";
+
 /**
  * Server action that sends a receipt image to the OCR.space API
  * and returns the extracted text.
@@ -23,6 +25,8 @@ interface OcrSpaceResult {
 export async function scanReceipt(
   formData: FormData
 ): Promise<{ success: true; text: string } | { success: false; error: string }> {
+  await requireRole("staff");
+
   const apiKey = process.env.OCR_SPACE_API_KEY;
   if (!apiKey) {
     return { success: false, error: "OCR_SPACE_API_KEY not configured" };
