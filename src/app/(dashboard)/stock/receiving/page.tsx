@@ -12,6 +12,8 @@ export default async function StockReceivingPage() {
       unitType: true,
       cartonSize: true,
       unitWeightMg: true,
+      costPerCartonCentavos: true,
+      stockQty: true,
     },
     orderBy: { name: "asc" },
   });
