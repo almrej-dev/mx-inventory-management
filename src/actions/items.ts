@@ -15,29 +15,35 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
 };
 
 type ItemSnapshot = {
+  name: string;
+  sku: string;
   type: string;
   unitType: string;
   category: string | null;
   unitWeightMg: number;
   cartonSize: number;
   costCentavos: number;
+  costPerCartonCentavos: number;
   minStockQty: number;
 };
 
 function formatItemField(item: ItemSnapshot, key: string): string {
   switch (key) {
+    case "Name": return item.name;
+    case "SKU": return item.sku;
     case "Type": return ITEM_TYPE_LABELS[item.type] ?? item.type;
     case "Category": return item.category ?? "—";
     case "Unit": return item.unitType;
     case "Unit weight": return item.unitType === "pcs" ? `${item.cartonSize} pcs` : `${mgToGrams(item.unitWeightMg)} g`;
     case "Carton size": return String(item.cartonSize);
-    case "Cost": return formatPesos(item.costCentavos);
+    case "Unit cost": return formatPesos(item.costCentavos);
+    case "Carton cost": return formatPesos(item.costPerCartonCentavos);
     case "Min stock qty": return String(item.minStockQty);
     default: return "";
   }
 }
 
-const ITEM_FIELDS = ["Type", "Category", "Unit", "Unit weight", "Carton size", "Cost", "Min stock qty"];
+const ITEM_FIELDS = ["Name", "SKU", "Type", "Category", "Unit", "Unit weight", "Carton size", "Unit cost", "Carton cost", "Min stock qty"];
 
 function buildItemChanges(item: ItemSnapshot) {
   return Object.fromEntries(ITEM_FIELDS.map((key) => [key, formatItemField(item, key)]));

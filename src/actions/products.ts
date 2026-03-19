@@ -245,15 +245,24 @@ export async function updateProduct(parentItemId: number, rawData: unknown) {
       const newIngredients = await fetchIngredientChanges(parentItemId);
       const oldList = (oldIngredients["Ingredients"] as string[]).sort().join("\n");
       const newList = (newIngredients["Ingredients"] as string[]).sort().join("\n");
-      const changes = oldList !== newList
-        ? { "Ingredients": { from: oldIngredients["Ingredients"], to: newIngredients["Ingredients"] } }
-        : {};
+      const changes: Record<string, string | string[] | { from: string | string[]; to: string | string[] }> = {};
+      const newName = name ?? snapshot.name;
+      const newSku = sku ?? snapshot.sku;
+      if (snapshot.name !== newName) {
+        changes["Name"] = { from: snapshot.name, to: newName };
+      }
+      if (snapshot.sku !== newSku) {
+        changes["SKU"] = { from: snapshot.sku, to: newSku };
+      }
+      if (oldList !== newList) {
+        changes["Ingredients"] = { from: oldIngredients["Ingredients"], to: newIngredients["Ingredients"] };
+      }
       await prisma.auditLog.create({
         data: {
           entityType: "PRODUCT",
           entityId: parentItemId,
-          entityName: snapshot.name,
-          entitySku: snapshot.sku,
+          entityName: newName,
+          entitySku: newSku,
           action: "UPDATE",
           changes,
           createdBy: authUser.id,
