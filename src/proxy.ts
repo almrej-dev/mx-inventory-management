@@ -46,23 +46,18 @@ export async function proxy(request: NextRequest) {
 
   // Protect /users route -- admin only
   if (user && pathname.startsWith("/users")) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
 
-    if (session) {
-      const { jwtDecode } = await import("jwt-decode");
-      const decoded = jwtDecode<{ user_role?: string }>(
-        session.access_token
-      );
-      const userRole = decoded.user_role;
-
-      if (userRole !== "admin") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/";
-        url.searchParams.set("error", "unauthorized");
-        return NextResponse.redirect(url);
-      }
+    if (!roleData) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("error", "unauthorized");
+      return NextResponse.redirect(url);
     }
   }
 
