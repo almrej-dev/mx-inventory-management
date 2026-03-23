@@ -1,42 +1,33 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { jwtDecode } from "jwt-decode";
 import { prisma } from "@/lib/prisma";
 import type { AppRole } from "@/types";
 
-interface JwtPayload {
-  user_role: AppRole;
-}
-
 /**
- * Cached auth helper — deduplicates getUser/getSession/profile calls
+ * Cached auth helper — deduplicates getUser/profile/role calls
  * within a single server request (layout + page share the same result).
  */
 export const getAuth = cache(async () => {
   const supabase = await createClient();
 
-  // getSession reads from cookies — no network call, fast
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  let userRole: AppRole = "viewer";
-  if (session) {
-    const jwt = jwtDecode<JwtPayload>(session.access_token);
-    userRole = jwt.user_role || "viewer";
-  }
-
-  // Session is already validated by middleware (supabase.auth.getUser()),
-  // so we can trust session.user without an extra network round-trip.
-  const user = session?.user ?? null;
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { user: null, userRole: "viewer" as AppRole, userName: "" };
   }
 
-  const profile = await prisma.profile
-    .findUnique({ where: { id: user.id } })
-    .catch(() => null);
+  const [roleRecord, profile] = await Promise.all([
+    prisma.userRole
+      .findFirst({ where: { userId: user.id } })
+      .catch(() => null),
+    prisma.profile
+      .findUnique({ where: { id: user.id } })
+      .catch(() => null),
+  ]);
+
+  const userRole: AppRole = roleRecord?.role ?? "viewer";
 
   return { user, userRole, userName: profile?.fullName || "" };
 });
