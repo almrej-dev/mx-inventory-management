@@ -91,9 +91,13 @@ export function ProductForm(props: ProductFormProps) {
   const isCreate = mode === 'create';
   const draftKey = getDraftKey(props);
 
-  // Create mode extra fields
-  const [productName, setProductName] = useState('');
-  const [productSku, setProductSku] = useState('');
+  // Name/SKU fields — seeded from props in edit mode
+  const [productName, setProductName] = useState(
+    mode === 'edit' ? (props as ProductFormEditProps).productName : ''
+  );
+  const [productSku, setProductSku] = useState(
+    mode === 'edit' ? (props as ProductFormEditProps).productSku : ''
+  );
 
   // Restore product meta draft after hydration
   useEffect(() => {
@@ -245,38 +249,26 @@ export function ProductForm(props: ProductFormProps) {
       )}
 
       {/* Product Identity */}
-      {mode === 'create' ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="productName">Product Name</Label>
-            <Input
-              id="productName"
-              placeholder="e.g. Chocolate Cake"
-              value={productName}
-              onChange={(e) => { setProductName(e.target.value); persistMeta(e.target.value, productSku); }}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="productSku">SKU</Label>
-            <Input
-              id="productSku"
-              placeholder="e.g. FIN-001"
-              value={productSku}
-              onChange={(e) => { const v = e.target.value.toUpperCase(); setProductSku(v); persistMeta(productName, v); }}
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="productName">Product Name</Label>
+          <Input
+            id="productName"
+            placeholder="e.g. Chocolate Cake"
+            value={productName}
+            onChange={(e) => { setProductName(e.target.value); persistMeta(e.target.value, productSku); }}
+          />
         </div>
-      ) : (
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-muted-foreground">Product</p>
-          <p className="text-base font-semibold">
-            {(props as ProductFormEditProps).productName}{' '}
-            <span className="font-mono text-sm font-normal text-muted-foreground">
-              {(props as ProductFormEditProps).productSku}
-            </span>
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="productSku">SKU</Label>
+          <Input
+            id="productSku"
+            placeholder="e.g. FIN-001"
+            value={productSku}
+            onChange={(e) => { const v = e.target.value.toUpperCase(); setProductSku(v); persistMeta(productName, v); }}
+          />
         </div>
-      )}
+      </div>
 
       {/* Items Section */}
       <div className="space-y-3">
